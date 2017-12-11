@@ -55,12 +55,8 @@ contract PeaceRelay {
     BlockHeader memory header = parseBlockHeader(rlpHeader);
     var blockNumber = getBlockNumber(rlpHeader);
 
-    // Detect if this block is an orphan.
-    if (!exists[header.prevBlockHash]) {
-      orphans[header.prevBlockHash].push(uint(blockHash));
-      blocks[blockHash] = header;
-      return;
-    }
+    // Detect if this block is an orphan and stop execution.
+    require(exists[header.prevBlockHash]);
 
     // Detect if this block is attaching itself to a tip.
     if (tip[header.prevBlockHash]) {
@@ -68,20 +64,7 @@ contract PeaceRelay {
       tip[header.prevBlockHash] = false;
     }
     // There is at least one orphan
-    recursive(uint(blockHash));
     SubmitBlock(blockHash, msg.sender);
-  }
-  
-
-  function recursive(uint blockHash) constant internal {
-    if (orphans[blockHash].length == 0) {
-      tip[blockHash] = true;
-    }else {
-      for (var i = 0; i < orphans[blockHash].length; i++) {
-        recursive(orphans[blockHash][i]);
-      }
-    }
-    return;
   }
 
   function checkTxProof(bytes value, bytes32 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
@@ -151,7 +134,7 @@ contract PeaceRelay {
     return blocks[blockHash].receiptRoot;
   }
 
-  function trieValue(bytes value, bytes encodedPath, bytes parentNodes, bytes32 root) constant returns (bool) {
+  function trieValue(bytes value, bytes encodedPath, bytes parentNodes, bytes32 root) constant internal returns (bool) {
     return MerklePatriciaProof.verify(value, encodedPath, parentNodes, root);
   }
 

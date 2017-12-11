@@ -52,8 +52,7 @@ async function postFrom() {
   try {
     result = await request
       .post(from)
-      .send({ "jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 83 })
-      .set('Accept', 'application/json')
+      .send({ jsonrpc: "2.0", method: "eth_blockNumber", params: [], id: 83 })
     await catchUp(startingBlockNumber, parseInt(result.body.result, 16));
   } catch (e) {
     console.error(e);

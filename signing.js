@@ -25,18 +25,18 @@ async function submitBlock(data, chain) {
   }
 }
 
-const signTransaction = function (args, privateKey) {
+function signTransaction(args, privateKey) {
   const unsignedTransaction = new EthereumTx(args);
   unsignedTransaction.sign(Buffer.from(privateKey, "hex"));
   const stx = unsignedTransaction.serialize();
   return `0x${stx.toString("hex")}`;
 };
 
-const privateToPublic = function (privateKey) {
+function privateToPublic(privateKey) {
   return secp256k1.publicKeyCreate(Buffer.from(privateKey, "hex"), false).slice(1);
 };
 
-const publicToAddress = function (pubKey) {
+function publicToAddress(pubKey) {
   let pubKeyBuf = Buffer.from(pubKey, "hex");
   if ((pubKeyBuf.length !== 64)) {
     pubKeyBuf = secp256k1.publicKeyConvert(pubKeyBuf, false).slice(1);
@@ -55,15 +55,13 @@ async function getNonce(address, chainurl){
   result = await request
   .post(chainurl)
   .send({ jsonrpc: "2.0", method: "eth_getTransactionCount", params: [address, "pending"], id:1 })
-  .set('Accept', 'application/json')
   return result.body.result;
 }
 
 async function submitTx(stx, chainurl){
   result = await request
   .post(chainurl)
-  .send(`{"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":["${stx}"],"id":1}`)
-  .set('Accept', 'application/json')
+  .send({ jsonrpc :"2.0", method :"eth_sendRawTransaction", params :[stx],"id":1})
   return result.body;
 }
 
