@@ -3,44 +3,54 @@ const request = require('superagent')
 const rlp = require('rlp')
 const EthereumBlock = require('ethereumjs-block/from-rpc')
 const commandLineArgs = require('command-line-args')
-
 const peacerelayABI = require('./peacerelay.json')
 const submitBlock = require('./signing');
 const settings = require("./settings.json");
 const secrets = require("./secrets.json");
 
 
-const optionDefinitions = [
-  { name: 'from', alias: 'f', type: String },
-  { name: 'to', alias: 't', type: String },
-  { name: 'start', alias: 's', type: Number },
-  { name: 'privateKey', alias: 'p', type: String }
-]
+// const optionDefinitions = [
+//   { name: 'from', alias: 'f', type: String },
+//   { name: 'to', alias: 't', type: String },
+//   { name: 'start', alias: 's', type: Number },
+//   { name: 'privateKey', alias: 'p', type: String }
+// ]
 
-const options = commandLineArgs(optionDefinitions)
+var options = {};
 
-const from = settings[options.from].url;
+var from, to, startingBlockNumber, From, To;
 
-const to = settings[options.to];
-to.privateKey = secrets[options.to].privateKey;
+Pr = function(from, to, start) {
+	options.from = from;
+	options.to = to;
+	options.start = start;
+	from = settings[options.from].url;
 
-const startingBlockNumber = options.start;
+	to = settings[options.to];
+	to.privateKey = secrets[options.to].privateKey;
 
-const From = new Web3(new Web3.providers.HttpProvider(from));
-const To = new Web3(new Web3.providers.HttpProvider(to.url));
+	startingBlockNumber = options.start;
 
-const PeaceRelayTo = new To.eth.Contract(peacerelayABI);
-PeaceRelayTo.options.address = to.peaceRelayAddress;
+	From = new Web3(new Web3.providers.HttpProvider(from));
+	To = new Web3(new Web3.providers.HttpProvider(to.url));
 
-
-run();
-function run() {
-  postFrom().then((result) => {
-    run();
-  }).catch((err) => {
-    console.error(err);
-  });
+	var PeaceRelayTo = new To.eth.contract(peacerelayABI);
+	PeaceRelayTo = PeaceRelayTo.at(to.peaceRelayAddress);
+	Pr.PeaceRelayTo = PeaceRelayTo;
+	return Pr;
 }
+
+module.exports = Pr;
+
+
+// run();
+// function run() {
+//   postFrom().then((result) => {
+//     run();
+//   }).catch((err) => {
+//     console.error(err);
+//   });
+// }
 
 /**
  * @name postForm
@@ -48,12 +58,14 @@ function run() {
  * @param x Does something cool
  * @returns Something even cooler
  */
-async function postFrom() {
+Pr.postFrom = async function(){
   try {
     result = await request
       .post(from)
       .send({ "jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 83 })
       .set('Accept', 'application/json')
+    console.log("HEE");
+    console.log(parseInt(result.body.result, 16));
     await catchUp(startingBlockNumber, parseInt(result.body.result, 16));
   } catch (e) {
     console.error(e);
@@ -66,7 +78,7 @@ async function postFrom() {
  * @param num
  * @returns  
  */
-async function catchUp(i, num) {
+Pr.catchUp = async function(i, num) {
   if (i < num - 3) {
     const result = await relay(i);
     if (result && result.body && result.body.error) {
@@ -78,7 +90,7 @@ async function catchUp(i, num) {
 }
 
 
-async function relay(num) {
+Pr.relay = async function(num) {
   try {
     block = await From.eth.getBlock(num);
     if (block === null) {
