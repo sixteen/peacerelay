@@ -34,7 +34,7 @@ Pr = function(from, to, start) {
 	From = new Web3(new Web3.providers.HttpProvider(from));
 	To = new Web3(new Web3.providers.HttpProvider(to.url));
 
-	var PeaceRelayTo = new To.eth.contract(peacerelayABI);
+	var PeaceRelayTo = To.eth.contract(peacerelayABI);
 	PeaceRelayTo = PeaceRelayTo.at(to.peaceRelayAddress);
 	Pr.PeaceRelayTo = PeaceRelayTo;
 	return Pr;

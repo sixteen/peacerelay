@@ -7,7 +7,10 @@ const eP = new EP(new Web3.providers.HttpProvider("https://kovan.infura.io"));
 function fetchAndVerifyProof(peaceRelay, txHash) {
 	return new Promise((resolve, reject) => {
 		return eP.getTransactionProof(txHash).then((proof) => {
-					console.log(peaceRelay.checkTxProof);
+					console.log("GOGO");
+					peaceRelay.submitBlock.call(proof.blockHash.toString('hex'),
+											   	proof.header.toString('hex'));
+					console.log(peaceRelay.blocks[proof.blockHash.toString('hex')]);
 	  				resolve(peaceRelay.checkTxProof.call(proof.value.toString('hex'), 
 								  					  			proof.blockHash.toString('hex'),
 													  			proof.path.toString('hex'), 
@@ -16,19 +19,33 @@ function fetchAndVerifyProof(peaceRelay, txHash) {
 	});										
 }
 
-async function submitBlock(txHash) {
-	var proof = await eP.getTransactionProof(txHash);
-	console.log(proof);
-	console.log(proof.blockHash.toString('hex'));
-	console.log(proof.header.toString('hex'));
-	peaceRelay.submitBlock(proof.blockHash.toString('hex'),
-						   proof.header.toString('hex'));
+function submitBlock(peaceRelay, txHash) {
+	return new Promise((resolve, reject) => {
+		return eP.getTransactionProof(txHash).then((proof) => {
+			console.log("A");
+			console.log(peaceRelay.blocks[proof.blockHash.toString('hex')]);
+			console.log(proof.blockHash.toString('hex'));
+			console.log(peaceRelay.getTxRoot('1234'));
+			resolve(peaceRelay.submitBlock.call(proof.blockHash.toString('hex'),
+											   	proof.header.toString('hex')));
+			console.log(peaceRelay.getTxRoot(proof.blockHash.toString('hex'))); })
+											  .catch((e) => {reject(e);});
+
+	});
 }
 
 
 describe("Test", function() {
   var peacerelay;
-  describe("Relay", function() {
+  describe("Submit block", function() {
+  	it("should submit", function() {
+  		this.timeout(60000);
+  		PrRelayer('kovan', 'ropsten', 1);
+
+  		return submitBlock(PrRelayer.PeaceRelayTo, tx1.txHash)
+  		.then((res) => {})
+  		.catch((e) => {console.log(e);});
+  	});
   });
 
   describe("Verify proof", function() {
@@ -38,6 +55,7 @@ describe("Test", function() {
 
   		return fetchAndVerifyProof(PrRelayer.PeaceRelayTo, tx1.txHash)
   		.then((res) => {
+  			console.log("WRONG");
   			assert.equal(res, true, 'wrong roi');
   		}).catch((e) => {console.log(e);});
   	});
