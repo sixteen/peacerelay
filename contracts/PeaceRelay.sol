@@ -10,7 +10,6 @@ contract PeaceRelay {
 
   uint[] public tips;
 
-  uint public startingBlock;
   uint public highestBlock;
   uint public genesisBlock;
 
@@ -40,8 +39,8 @@ contract PeaceRelay {
   event SubmitBlock(bytes32 blockHash, address submitter);
 
   function PeaceRelay(uint blockNumber) {
-    startingBlock = blockNumber;
     highestBlock = blockNumber;
+    genesisBlock = blockNumber;
     authorized[msg.sender] = true;
   }
 
@@ -56,6 +55,10 @@ contract PeaceRelay {
     // Detect if this block is an orphan and stop execution.
     require(exists[header.prevBlockHash] || blockNumber == genesisBlock);
 
+    if (blockNumber > highestBlock) {
+      highestBlock = blockNumber;
+    } 
+    
     // Detect if this block is attaching itself to a tip.
     if (tip[header.prevBlockHash]) {
       // The previous tip is no longer the tip.
