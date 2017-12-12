@@ -12,16 +12,14 @@ contract PeaceRelay {
 
   uint public startingBlock;
   uint public highestBlock;
+  uint public genesisBlock;
 
   mapping (address => bool) authorized;
   mapping (bytes32 => BlockHeader) public blocks;
   
   mapping (uint => bool) public tip;
   mapping (uint => bool) public exists;
-  mapping (uint => uint[]) public orphans;
 
-  mapping (uint => bool) public organized;
-  mapping (uint => bool) public unorganized;
   mapping (bytes32 => uint) blockHashToNumber;
 
   modifier onlyAurhorized() {
@@ -41,9 +39,9 @@ contract PeaceRelay {
   event TxRootEvent(bytes32 txRoot);
   event SubmitBlock(bytes32 blockHash, address submitter);
 
-  function PeaceRelay() {
-    startingBlock = 4951000;
-    highestBlock = 4951000;
+  function PeaceRelay(uint blockNumber) {
+    startingBlock = blockNumber;
+    highestBlock = blockNumber;
     authorized[msg.sender] = true;
   }
 
@@ -56,13 +54,14 @@ contract PeaceRelay {
     var blockNumber = getBlockNumber(rlpHeader);
 
     // Detect if this block is an orphan and stop execution.
-    require(exists[header.prevBlockHash]);
+    require(exists[header.prevBlockHash] || blockNumber == genesisBlock);
 
     // Detect if this block is attaching itself to a tip.
     if (tip[header.prevBlockHash]) {
       // The previous tip is no longer the tip.
       tip[header.prevBlockHash] = false;
     }
+    blocks[blockHash] = header;
     // There is at least one orphan
     SubmitBlock(blockHash, msg.sender);
   }
@@ -71,19 +70,19 @@ contract PeaceRelay {
     // add fee for checking transaction
     bytes32 txRoot = blocks[blockHash].txRoot;
     TxRootEvent(txRoot);
-    return trieValue(value, path, parentNodes, txRoot) && isOrganised(blockHash);
+    return trieValue(value, path, parentNodes, txRoot);
   }
 
   // TODO: test
   function checkStateProof(bytes value, bytes32 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
     bytes32 stateRoot = blocks[blockHash].stateRoot;
-    return trieValue(value, path, parentNodes, stateRoot) && isOrganised(blockHash);
+    return trieValue(value, path, parentNodes, stateRoot);
   }
 
   // TODO: test
   function checkReceiptProof(bytes value, bytes32 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
     bytes32 receiptRoot = blocks[blockHash].receiptRoot;
-    return trieValue(value, path, parentNodes, receiptRoot) && isOrganised(blockHash);
+    return trieValue(value, path, parentNodes, receiptRoot);
   }
 
   // parse block header
@@ -112,14 +111,6 @@ contract PeaceRelay {
   function getBlockNumber(bytes rlpHeader) constant internal returns (uint blockNumber) {
     RLP.RLPItem[] memory rlpH = RLP.toList(RLP.toRLPItem(rlpHeader));
     blockNumber = RLP.toUint(rlpH[8]);
-  }
-  
-  function doesNotExist(uint blockNumber) constant internal returns (bool) {
-      return !(organized[blockNumber] || unorganized[blockNumber]);
-  }
-  
-  function isOrganised(bytes32 blockHash) constant internal returns (bool) {
-      return organized[blockHashToNumber[blockHash]];
   }
 
   function getStateRoot(bytes32 blockHash) constant returns (bytes32) {
