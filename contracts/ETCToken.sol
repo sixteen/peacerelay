@@ -68,7 +68,7 @@ contract ETCToken is ERC20, SafeMath, Ownable {
   }
 
   function mint(bytes value, bytes32 blockHash, bytes path, bytes parentNodes) returns (bool success) {
-    if (!rewarded[keccak256(value,blockHash,path,parentNodes)] && ETCRelay.checkTxProof(value, blockHash, path, parentNodes)) {
+    if (!rewarded[keccak256(value,blockHash,path,parentNodes)] && ETCRelay.checkTxProof(value, uint256(blockHash), path, parentNodes)) {
       Transaction memory tx = getTransactionDetails(value);
       bytes4 functionSig = getSig(tx.data);
 
