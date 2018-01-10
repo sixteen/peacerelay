@@ -1,24 +1,23 @@
 const rlp = require('rlp');
-// const Web3 = require('web3');
-const EthProof  = require('eth-proof')
+const Web3 = require('web3');
+const ethProof  = require('eth-proof')
 const EthereumBlock = require('ethereumjs-block/from-rpc')
 
+
 const PeaceRelay = artifacts.require("./Peacerelay.sol");
-const ethProof = new EthProof(web3);
+const EthProof = new ethProof(new Web3.providers.HttpProvider("http://localhost:8545"));
 
 contract('Peacerelay', (accounts) => {
   var block;
-  this.provider.sendAsync = this.provider.send
   
-  it("Offline Transaction proof", async () => {
-    var txHash = '0xb22c17a15fe9a71f7af6b2ed900635c3a3da077264dac85538c82f5f2ddb45b4';
-    var block2 = await web3.eth.getBlock(197);
-    ethProof.getTransactionProof(txHash).then((result)=>{
-      var myTrustedBlockHash = Buffer.from(block2.hash,'hex')
-      var verified = EthProof.transaction(result.path, result.value, result.parentNodes, result.header, myTrustedBlockHash)
-      console.log(verified) // true
-    }).catch((e)=>{console.log(e)})
-  });
+  // it("Offline Transaction proof", async () => {
+  //   var txHash = '0xb22c17a15fe9a71f7af6b2ed900635c3a3da077264dac85538c82f5f2ddb45b4';
+  //   var block2 = await web3.eth.getBlock(197);
+  //   var result = await ethProof.getTransactionProof(txHash);
+  //   var myTrustedBlockHash = Buffer.from(block2.hash,'hex')
+  //   var verified = EthProof.transaction(result.path, result.value, result.parentNodes, result.header, myTrustedBlockHash)
+  //   console.log(verified) 
+  // });
 
   it("Submitting a block", async () => {
     
@@ -53,17 +52,17 @@ contract('Peacerelay', (accounts) => {
     assert.equal(block.receiptsRoot, receiptsRoot);
   });
 
-  it("Check transaction proof", async () => {
+  // it("Check transaction proof", async () => {
     
-  });
+  // });
 
-  it("Check state proof", async () => {
+  // it("Check state proof", async () => {
     
-  });
+  // });
 
-  it("Check receipts proof", async () => {
+  // it("Check receipts proof", async () => {
     
-  });
+  // });
 });
 
 function getRawHeader(_block) {
