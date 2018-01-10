@@ -8,18 +8,15 @@ contract PeaceRelay {
   using RLP for RLP.Iterator;
   using RLP for bytes;
 
-  uint[] public tips;
-
-  uint public highestBlock;
-  uint public genesisBlock;
+  uint[] tips;
+  uint256 public highestBlock;
 
   mapping (address => bool) authorized;
-  mapping (bytes32 => BlockHeader) public blocks;
+  mapping (uint256 => BlockHeader) public blocks;
   
-  mapping (uint => bool) public tip;
-  mapping (uint => bool) public exists;
+  mapping (uint256 => bool) tip;
+  mapping (uint256 => bool) exists;
 
-  mapping (bytes32 => uint) blockHashToNumber;
 
   modifier onlyAurhorized() {
     if (authorized[msg.sender])
@@ -36,11 +33,14 @@ contract PeaceRelay {
 
 
   event TxRootEvent(bytes32 txRoot);
-  event SubmitBlock(bytes32 blockHash, address submitter);
+  event SubmitBlock(uint256 blockHash, address submitter);
 
-  function PeaceRelay(uint blockNumber) {
+  function PeaceRelay(uint256 blockNumber, uint256 blockHash, bytes rlpHeader) {
     highestBlock = blockNumber;
-    genesisBlock = blockNumber;
+    exists[blockHash] = true;
+    tip[blockHash] = true;
+    BlockHeader memory header = parseBlockHeader(rlpHeader);
+    blocks[blockHash] = header;
     authorized[msg.sender] = true;
   }
 
@@ -48,25 +48,24 @@ contract PeaceRelay {
     authorized[user] = true;
   }
 
-  function submitBlock(bytes32 blockHash, bytes rlpHeader) onlyAurhorized {
+  function submitBlock(uint256 blockHash, bytes rlpHeader) onlyAurhorized {
     BlockHeader memory header = parseBlockHeader(rlpHeader);
-    var blockNumber = getBlockNumber(rlpHeader);
-
-    require(exists[header.prevBlockHash] || blockNumber == genesisBlock);
-
-    if (blockNumber > highestBlock) {
-      highestBlock = blockNumber;
-    } 
-    
+    uint256 blockNumber = getBlockNumber(rlpHeader);
+    require(exists[header.prevBlockHash]);
     if (tip[header.prevBlockHash]) {
       tip[header.prevBlockHash] = false;
     }
+    if (blockNumber > highestBlock) {
+      highestBlock = blockNumber;
+    }
+    tip[blockHash] = true;
+    exists[blockHash] = true;
     blocks[blockHash] = header;
     // There is at least one orphan
     SubmitBlock(blockHash, msg.sender);
   }
 
-  function checkTxProof(bytes value, bytes32 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
+  function checkTxProof(bytes value, uint256 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
     // add fee for checking transaction
     bytes32 txRoot = blocks[blockHash].txRoot;
     TxRootEvent(txRoot);
@@ -74,13 +73,13 @@ contract PeaceRelay {
   }
 
   // TODO: test
-  function checkStateProof(bytes value, bytes32 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
+  function checkStateProof(bytes value, uint256 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
     bytes32 stateRoot = blocks[blockHash].stateRoot;
     return trieValue(value, path, parentNodes, stateRoot);
   }
 
   // TODO: test
-  function checkReceiptProof(bytes value, bytes32 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
+  function checkReceiptProof(bytes value, uint256 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
     bytes32 receiptRoot = blocks[blockHash].receiptRoot;
     return trieValue(value, path, parentNodes, receiptRoot);
   }
@@ -113,15 +112,15 @@ contract PeaceRelay {
     blockNumber = RLP.toUint(rlpH[8]);
   }
 
-  function getStateRoot(bytes32 blockHash) constant returns (bytes32) {
+  function getStateRoot(uint256 blockHash) constant returns (bytes32) {
     return blocks[blockHash].stateRoot;
   }
 
-  function getTxRoot(bytes32 blockHash) constant returns (bytes32) {
+  function getTxRoot(uint256 blockHash) constant returns (bytes32) {
     return blocks[blockHash].txRoot;
   }
 
-  function getReceiptRoot(bytes32 blockHash) constant returns (bytes32) {
+  function getReceiptRoot(uint256 blockHash) constant returns (bytes32) {
     return blocks[blockHash].receiptRoot;
   }
 
