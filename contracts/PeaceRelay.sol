@@ -52,16 +52,13 @@ contract PeaceRelay {
     BlockHeader memory header = parseBlockHeader(rlpHeader);
     var blockNumber = getBlockNumber(rlpHeader);
 
-    // Detect if this block is an orphan and stop execution.
     require(exists[header.prevBlockHash] || blockNumber == genesisBlock);
 
     if (blockNumber > highestBlock) {
       highestBlock = blockNumber;
     } 
     
-    // Detect if this block is attaching itself to a tip.
     if (tip[header.prevBlockHash]) {
-      // The previous tip is no longer the tip.
       tip[header.prevBlockHash] = false;
     }
     blocks[blockHash] = header;

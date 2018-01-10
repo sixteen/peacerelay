@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+     "peacerelay": "cli/peacerelay.js"
+  },
   "keywords": [
     "peacerelay",
     "ethereum",
@@ -13,7 +16,7 @@
     "cross-ethereum"
   ],
   "author": "Nadimpalli Susruth",
-  "email": "susruth@lambdaprotocol.io",
+  "email": "susruth@republicprotocol.com",
   "license": "MIT",
   "dependencies": {
     "buffer": "^5.0.8",

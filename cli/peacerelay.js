@@ -1,3 +1,5 @@
+
+
 const Web3 = require('web3')
 const request = require('superagent')
 const rlp = require('rlp')
@@ -13,7 +15,6 @@ const secrets = require("./secrets.json");
 const optionDefinitions = [
   { name: 'from', alias: 'f', type: String },
   { name: 'to', alias: 't', type: String },
-  { name: 'start', alias: 's', type: Number },
   { name: 'privateKey', alias: 'p', type: String }
 ]
 
@@ -24,14 +25,20 @@ const from = settings[options.from].url;
 const to = settings[options.to];
 to.privateKey = secrets[options.to].privateKey;
 
-const startingBlockNumber = options.start;
-
 const From = new Web3(new Web3.providers.HttpProvider(from));
 const To = new Web3(new Web3.providers.HttpProvider(to.url));
 
 const PeaceRelayTo = new To.eth.Contract(peacerelayABI);
 PeaceRelayTo.options.address = to.peaceRelayAddress;
 
+var startingBlockNumber;
+
+PeaceRelayTo.methods.genesisBlock().call()
+.then((result) => {
+  startingBlockNumber = result;
+});
+
+ console.log(startingBlockNumber);
 
 run();
 function run() {
@@ -71,7 +78,6 @@ async function catchUp(i, num) {
     if (result && result.body && result.body.error) {
       return await catchUp(i, num)
     }
-    startingBlockNumber += 1;
     await catchUp(i + 1, num)
   }
 }
