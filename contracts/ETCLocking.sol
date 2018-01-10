@@ -52,10 +52,10 @@ contract ETCLocking is SafeMath {
     bytes txValue, bytes32 txBlockHash, bytes txPath, bytes txParentNodes, bytes rlpTransaction,
     bytes recValue, bytes32 recBlockHash, bytes recPath, bytes recParentNodes, bytes rlpReceipt
   ) returns (bool success) {
-    if (ETHRelay.checkReceiptProof(recValue, recBlockHash, recPath, recParentNodes)) {
+    if (ETHRelay.checkReceiptProof(recValue, uint256(recBlockHash), recPath, recParentNodes)) {
       Log memory log = getReceiptDetails(rlpReceipt);
 
-      if (ETHRelay.checkTxProof(txValue, txBlockHash, txPath, txParentNodes)) {
+      if (ETHRelay.checkTxProof(txValue, uint256(txBlockHash), txPath, txParentNodes)) {
           Transaction memory tx = getTransactionDetails(txValue);
           assert (getSig(tx.data) == BURN_FUNCTION_SIG);
           assert (tx.to == etcTokenAddr);
