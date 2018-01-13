@@ -66,9 +66,11 @@ function fetchBlockHash(chain, txHash) {
 
 describe("Kovan to Ropsten", function() {
     
+    var lockTxHash, mintTxHash;
+
     it("should lock token in Kovan", function() {
         var data = await ETCLocking.methods.lock(RopstenWallet).encodeABI();
-        var lockTxHash = await sign.lock(data, 0.5);
+        lockTxHash = await sign.lock(data, 0.5);
         setTimeout(function() {
             Kovan.eth.getTransactionReceipt(lockTxHash).then((proof) => {
               assert.equal(proof.transactionHash, lockTxHash);
@@ -81,7 +83,7 @@ describe("Kovan to Ropsten", function() {
 
     it("should relay block of the Kovan's lock transaction in Ropsten", function() {
        return fetchBlockHash('kovan', lockTxHash).then((blockHash) => {
-          var blockInfo = await sign.getBlockInfo(blockHash, 'ropsten');
+          var blockInfo = await sign.getBlockInfo(blockHash, 'kovan');
 
           var data = await PeaceRelayRopsten.methods.getTxRoot(new BigNumber(blockHash.toString('hex')));
           var txRoot = await sign.ethCall(data, 'ropsten', settings['ropsten'].peaceRelayAddress);
@@ -109,11 +111,11 @@ describe("Kovan to Ropsten", function() {
 
           var wrongBlockHash = '0x02a843c95efe6387a085aac84f5e2e80a513a0085c0a1a12f165ad1134f04058';
 
-          var data = await peaceRelay.methods.checkTxProof(proof.value.toString('hex'),
-                                                            new BigNumber(wrongBlockHash),
-                                                            proof.path.toString('hex'),
-                                                            proof.parentNodes.toString('hex'));
-          var res = await sign.ethCall(data, dstChain, peaceRelay.options.address);
+          var data = await peaceRelayRopsten.methods.checkTxProof(proof.value.toString('hex'),
+                                                                  new BigNumber(wrongBlockHash),
+                                                                  proof.path.toString('hex'),
+                                                                  proof.parentNodes.toString('hex'));
+          var res = await sign.ethCall(data, 'ropsten', peaceRelayRopsten.options.address);
           
           assert.equal(res, false); 
 
@@ -128,15 +130,97 @@ describe("Kovan to Ropsten", function() {
         var data = await ETCToken.methods.mint(proof.value.toString('hex'), proof.blockHash.toString('hex'), 
                                                proof.path.toString('hex'), proof.parentNodes.toString('hex')).encodeABI();
 
-        var hash = await sign.mint(data);
+        mintTxHash = await sign.mint(data);
       
       });
   });
 
   it("should fetch the correct info of the lock transaction", function() {
-      var txReceipt = await sign.getTransactionReceipt(lockTxHash, 'kovan')
-      // assert.equal(tx.receipt.logs[0].data, amountMinted, "Should have given user correct amt")
-      // assert.equal(tx.receipt.logs[0].topics[1], addMintedFor, "should have given to correct person")
+      var amountMinted = '0x0000000000000000000000001dcd6500'; // 0.5 ETH
+      var addMintedFor = RopstenWallet; //TODO : FIX THIS
+      var txReceipt = await sign.getTransactionReceipt(mintTxHash, 'ropsten');
+      assert.equal(txReceipt.logs[0].data, amountMinted, "Should have given user correct amt");
+      assert.equal(txReceipt.logs[0].topics[1], addMintedFor, "Should have given to correct person");
+  });
+
+});
+
+describe("Ropsten to Kovan", function() {
+    var burnTxHash, unlockTxHash;
+
+    it("should burn token in Ropsten", function() {
+        var data = await ETCToken.methods.burn(KovanWallet).encodeABI();
+        burnTxHash = await sign.burn(data, 0.5);
+        setTimeout(function() {
+            Ropsten.eth.getTransactionReceipt(burnTxHash).then((proof) => {
+              assert.equal(proof.transactionHash, burnTxHash);
+              assert.equal(proof.from, RopstenWallet);
+              assert.equal(proof.to, settings['ropsten'].peaceRelayAddress);
+
+            });
+        }, 10000);
+    });
+
+    it("should relay block of the Ropsten's burn transaction in Kovan's peacerelay", function() {
+       return fetchBlockHash('ropsten', burnTxHash).then((blockHash) => {
+          var blockInfo = await sign.getBlockInfo(blockHash, 'ropsten');
+
+          var data = await PeaceRelayRopsten.methods.getTxRoot(new BigNumber(blockHash.toString('hex')));
+          var txRoot = await sign.ethCall(data, 'kovan', settings['kovan'].peaceRelayAddress);
+          
+          data = await PeaceRelayRopsten.methods.getStateRoot(new BigNumber(blockHash.toString('hex')));
+          var stateRoot = await sign.ethCall(data, 'kovan', settings['kovan'].peaceRelayAddress); 
+
+          data = await PeaceRelayRopsten.methods.getReceiptRoot(new BigNumber(blockHash.toString('hex')));
+          var receiptRoot = await sign.ethCall(data, 'kovan', settings['kovan'].peaceRelayAddress);
+
+          assert.equal(txRoot, blockInfo.transactionRoot);
+          assert.equal(stateRoot, blockInfo.stateRoot);
+
+       });
+    });
+
+  it("should verify the Ropsten's burn proof in Kovan", function() {
+     return fetchAndVerifyProof(PeaceRelayKovan, burnTxHash, 'ropsten', 'kovan').then((res) => {
+       assert.equal(res, true);
+     });
+  });
+
+  it("should not verify wrong proof", function() {
+    return getEP('ropsten').getTransactionProof(burnTxHash).then((proof) => {
+
+          var wrongBlockHash = '0x4da4aa87238f0011c2a259f5deda2c906136594a4f57b399c83d3f2dc07ddfa2';
+
+          var data = await peaceRelayKovan.methods.checkTxProof(proof.value.toString('hex'),
+                                                                new BigNumber(wrongBlockHash),
+                                                                proof.path.toString('hex'),
+                                                                proof.parentNodes.toString('hex'));
+          var res = await sign.ethCall(data, 'kovan', peaceRelayKovan.options.address);
+          
+          assert.equal(res, false); 
+
+          })
+                                                    
+                                                    .catch((e) => {reject(e);});
+  });
+
+  it("should unlock token", function() {
+      return getEP('ropsten').getTransactionProof(burnTxHash).then((proof) => {
+        
+        var data = await ETCToken.methods.mint(proof.value.toString('hex'), proof.blockHash.toString('hex'), 
+                                               proof.path.toString('hex'), proof.parentNodes.toString('hex')).encodeABI();
+
+        unlockTxHash = await sign.unlock(data);
+      
+      });
+  });
+
+  it("should fetch the correct info of the burn transaction", function() {
+      var amountMinted = '0x0000000000000000000000001dcd6500'; // 0.5 ETH
+      var addMintedFor = KovanWallet; //TODO : FIX THIS
+      var txReceipt = await sign.getTransactionReceipt(unlockTxHash, 'kovan');
+      assert.equal(txReceipt.logs[0].data, amountMinted, "Should have given user correct amt");
+      assert.equal(txReceipt.logs[0].topics[1], addMintedFor, "Should have given to correct person");
   });
 
 });

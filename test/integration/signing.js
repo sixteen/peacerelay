@@ -18,7 +18,7 @@ var chainIdMapping = {
 }
 
 async function helper(data, chain, contractAddr, amount) {
- try {
+  try {
     const nonce = await getNonce(privateToAddress(settings[chain].privateKey), chainUrlMapping[chain]);
     const stx = signTransaction(
       {
@@ -40,10 +40,26 @@ async function helper(data, chain, contractAddr, amount) {
 
 async function lock(data, amount) {
   try {
-
     var hash = await helper(data, 'kovan', settings['kovan'].etcLockingAddress, amount);
     return hash;
+  } catch(err) {
+    throw err;
+  }
+}
 
+async function unlock(data) {
+  try {
+    var hash = await helper(data, 'kovan', settings['kovan'].etcLockingAddress, 0);
+    return hash;
+  } catch(err) {
+    throw err;
+  }
+}
+
+async function burn(data, amount) {
+  try {
+    var hash = await helper(data, 'ropsten', settings['ropsten'].etcTokenAddress, amount);
+    return hash;
   } catch(err) {
     throw err;
   }
@@ -51,15 +67,12 @@ async function lock(data, amount) {
 
 async function mint(data) {
   try {
-    
     var hash = await helper(data, 'ropsten', settings['ropsten'].etcTokenAddress, 0);
     return hash;
-
   } catch(err) {
     throw err;
   }
 }
-
 
 function signTransaction(args, privateKey) {
   const unsignedTransaction = new EthereumTx(args);
@@ -123,4 +136,4 @@ async function getTransactionReceipt(txHash, chain) {
   return result.body.result;
 }
 
-module.exports = {ethCall, lock, mint}
+module.exports = {ethCall, getBlockInfo, getTransactionReceipt, lock, unlock, mint, burn}
