@@ -37,9 +37,9 @@ contract ETCLocking is SafeMath {
   event Locked(address indexed from, address indexed ethAddr, uint value);
   event Unlocked(address indexed to, uint value);
 
-  function ETCLocking(address peaceRelayAddr, address _etcTokenAddr) {
+  function ETCLocking(address _peaceRelayAddr, address _etcTokenAddr) {
     totalSupply = 0;
-    ETHRelay = PeaceRelay(peaceRelayAddr);
+    ETHRelay = PeaceRelay(_peaceRelayAddr);
     etcTokenAddr = _etcTokenAddr;
   }
 
