@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PeaceRelay</title>
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700,300' rel='stylesheet' type='text/css'>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .section {
+      margin: 20px;
+    }
+    button {
+      padding: 5px 16px;
+      border-radius: 4px;
+    }
+    button#changeQuota { background-color: yellow; }
+    button#buyTicket { background-color: #98fb98; }
+    button#refundTicket { background-color: pink; }
+    button#createWallet { background-color: #add8e6; }
+    #seed {color: green;}
+  </style>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script type="text/javascript" src="../build/app.js"></script>
+</head>
+<body>
+  <h1>Chain Relay</h1>
+
+  <hr/>
+  
+  <div class = "section">
+    <h3 id="chainName"> Your current chain: </h2>
+    <h3 id="accountNum"> Your account: </h2>
+  </div>
+
+  <div class="section" id="kovan">
+    <h2>Kovan Chain</h2>
+      Amount: <input type="text" id="amountKovan"/> 
+      Recepient: <input type="text" id="receiverRopsten"/>
+      <button onclick="convertToRopsten()">Convert to Ropsten</button>
+      <span></span>
+  </div>
+
+  <hr/>
+
+  <div class="section" id="ropsten">
+    <h2>Ropsten Chain</h2>
+      Amount: <input type="text" id="amountRopsten"/> 
+      Recipient: <input type="text" id="receiverKovan" />
+      <button onclick="convertToKovan()">Convert to Kovan</button>
+      <span></span>
+  </div>
+
+  <div class="section" id="wait">
+    <h2> Please wait for the conversion ... </h2>
+  </div>
+
+  <hr/>
+  
+  <div class="section" id="error">
+  </div>
+</body>
+</html> 
