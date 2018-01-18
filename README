@@ -1,0 +1,4 @@
+- For the tests, we use web3 1.0.0(still in beta)
+- For the UI, we use web3 0.0.2x (cannot find correct ways to watch events in 1.0.0)
+	+ webpack
+	+ npm run dev( or webpack-dev-server)
