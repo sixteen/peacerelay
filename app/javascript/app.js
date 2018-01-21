@@ -1,5 +1,6 @@
 var EP = require('eth-proof');
 var Web3 = require('web3');
+var helper  = require('../../utils/helpers.js');
 var settings = require('../../cli/settings.json');
 const PeacerelayABI = require('../../build/contracts/PeaceRelay.json').abi;
 const ETCTokenABI = require('../../build/contracts/ETCToken.json').abi;
@@ -124,16 +125,16 @@ function lock(chain, amount, recipient) {
 
 function mint(proof, chain) {
   if(chain == 'kovan') {
-    ETCLocking.unlock.sendTransaction(proof.value.toString('hex'), proof.blockHash.toString('hex'), 
-                                      proof.path.toString('hex'), proof.parentNodes.toString('hex'),
+    ETCLocking.unlock.sendTransaction(proof.value, proof.blockHash, 
+                                      proof.path, proof.parentNodes,
                                       function(err, res) {
                                         if(err) {
                                           updateErrorUI(err);
                                         }
                                       });
   } else {
-    ETCToken.mint.sendTransaction(proof.value.toString('hex'), proof.blockHash.toString('hex'), 
-                                  proof.path.toString('hex'), proof.parentNodes.toString('hex'),
+    ETCToken.mint.sendTransaction(proof.value, proof.blockHash, 
+                                  proof.path, proof.parentNodes,
                                   function(err, res) {
                                     if(err) {
                                       updateErrorUI(err);
@@ -159,6 +160,7 @@ function convertToken(recipient, amount, from, to) {
   var lockTxHash = lock(from, amount, recipient);
 
   getEP(from).getTransactionProof(lockTxHash).then((proof) => { 
+    proof = helper.web3ify(proof);
     var blockHash = proof.blockHash.toString('hex');
 
     updateWaitingUI();
