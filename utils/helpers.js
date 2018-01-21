@@ -16,3 +16,4 @@ helpers.web3ify = (input) => {
   return output
 }
 
+module.exports = helpers;
