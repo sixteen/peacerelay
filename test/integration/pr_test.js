@@ -18,9 +18,9 @@ const RopstenWallet = settings['ropsten'].walletAddress;
 const Ropsten = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
 const Kovan = new Web3(new Web3.providers.HttpProvider("https://kovan.infura.io"));
 
-const PeacerelayABI = require('../build/contracts/PeaceRelay.json').abi;
-const ETCTokenABI = require('../build/contracts/ETCToken.json').abi;
-const ETCLockingABI = require('../build/contracts/ETCLockingABI.json').abi;
+const PeacerelayABI = require('../../build/contracts/PeaceRelay.json').abi;
+const ETCTokenABI = require('../../build/contracts/ETCToken.json').abi;
+const ETCLockingABI = require('../../build/contracts/ETCLocking.json').abi;
 
 var PeaceRelayRopsten = new Ropsten.eth.Contract(PeacerelayABI);
 var PeaceRelayKovan = new Kovan.eth.Contract(PeacerelayABI);
@@ -31,6 +31,8 @@ PeaceRelayRopsten.options.address = settings['ropsten'].peaceRelayAddress;
 PeaceRelayKovan.options.address = settings['kovan'].peaceRelayAddress;
 ETCToken.options.address = settings['ropsten'].etcTokenAddress;
 ETCLocking.options.address = settings['kovan'].etcLockingAddress;
+
+this.providers.sendAsync = this.providers.send;
 
 function fetchAndVerifyProof(peaceRelay, txHash, srcChain, dstChain) {
   return new Promise((resolve, reject) => {
