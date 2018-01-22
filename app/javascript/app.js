@@ -17,7 +17,7 @@ var ETCLockingContract = Kovan.eth.contract(ETCLockingABI);
 var PeaceRelayRopsten = PeaceRelayRopstenContract.at(settings['ropsten'].peaceRelayAddress);
 var PeaceRelayKovan = PeaceRelayKovanContract.at(settings['kovan'].peaceRelayAddress);
 var ETCToken = ETCTokenContract.at(settings['ropsten'].etcTokenAddress);
-var ETCLocking = ETCLocking.at(settings['kovan'].etcLockingAddress);
+var ETCLocking = ETCLockingContract.at(settings['kovan'].etcLockingAddress);
 
 const EpRopsten = new EP(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
 const EpKovan = new EP(new Web3.providers.HttpProvider("https://kovan.infura.io"));
@@ -28,7 +28,15 @@ var relays = {'kovan': PeaceRelayKovan, 'ropsten': PeaceRelayRopsten};
 var helpers = {'kovan': ETCLocking, 'ropsten': ETCToken};
 var chains = {'kovan': Kovan, 'ropsten': Ropsten};
 
+window.PeaceRelayRopsten = PeaceRelayRopsten;
+window.PeaceRelayKovan = PeaceRelayKovan;
+window.ETCToken = ETCToken;
+window.ETCLocking = ETCLocking;
+
 window.addEventListener('load', function() {
+
+  $('#kovanButton').on('click', () => convertToRopsten());
+  $('#ropstenButton').on('click', () => convertToKovan());
 
   $("#wait").hide();
   // Checking if Web3 has been injected by the browser (Mist/MetaMask)
@@ -62,6 +70,7 @@ window.addEventListener('load', function() {
         console.log('This is an unknown network.')
     }
 
+    web3js.eth.defaultAccount = web3js.eth.accounts[0];
     updateInterface(netId);
   });
 
@@ -90,24 +99,28 @@ function updateInterface(networkId) {
   }
 
   $('#chainName').append(chainMapping[networkId.toString()]);
-  console.log(web3js.eth.defaultAccount);
+  console.log("ACCOUNT: " + web3js.eth.defaultAccount);
   $('#accountNum').append(web3js.eth.defaultAccount);
 }
   
-function lock(chain, amount, recipient) {
-  var txHash;
+function lock(chain, amount, recipient, callback) {
+  var txHash, data;
 
+  console.log("lock " + chain + " " + recipient);
   if(chain == 'kovan') {
-    ETCLocking.lock.sendTransaction(recipient, {value: amount}, 
+    data = ETCLocking.lock.getData(recipient);
+    web3js.eth.sendTransaction({data: data, from: web3js.eth.defaultAccount, to: settings['kovan'].etcLockingAddress, value: amount}, 
                                     function(err, res) {
+                                      console.log(err);
                                       if(!err) {
-                                        txHash = res;
+                                        callback(res);
                                       } else {
                                         updateErrorUI(err);
                                       }
                                     });
   } else {
-    ETCToken.burn.sendTransaction(recipient, {value: amount}, 
+    data = ETCToken.burn.getData(recipient);
+    web3js.eth.sendTransaction({data: data, from: web3js.eth.defaultAccount, to: settings['ropsten'].etcTokenAddress, value: amount}, 
                                   function(err, res) {
                                     if(!err) {
                                       txHash = res;
@@ -117,10 +130,6 @@ function lock(chain, amount, recipient) {
                                   });
   }
 
-  // TODO: Fix this busy-waiting approach
-  while(txHash == undefined);
-
-  return txHash;
 }
 
 function mint(proof, chain) {
@@ -157,24 +166,47 @@ function convertToKovan() {
 }
 
 function convertToken(recipient, amount, from, to) {
-  var lockTxHash = lock(from, amount, recipient);
+  console.log("About to Convert " + amount);
+  lock(from, amount, recipient, function(lockTxHash) {
 
-  getEP(from).getTransactionProof(lockTxHash).then((proof) => { 
-    proof = helper.web3ify(proof);
-    var blockHash = proof.blockHash.toString('hex');
+    console.log("LOCK TX: " + lockTxHash);
 
-    updateWaitingUI();
-
-    // watch the relaying block event
-    var relayEvent = relays[to].SubmitBlock({blockHash: blockHash});
-
-    relayEvent.watch(function(err, result) {
-      if(!err) {
-        mint(proof, to);
-      } else {
-        updateErrorUI(err);
+    var receipt;
+    while(true) {
+      receipt = Kovan.eth.getTransactionReceipt(lockTxHash);
+      if(receipt != null) {
+        break;
       }
-    });
+    }
+
+    console.log(receipt.blockNumber);
+    console.log(receipt.status);
+
+    if(receipt.status == 1) {
+      EPs[from].getTransactionProof(lockTxHash).then((proof) => { 
+        proof = helper.web3ify(proof);
+        var blockHash = proof.blockHash;
+
+        updateWaitingUI();
+
+        window.a = relays[to];
+        console.log(blockHash);
+        // watch the relaying block event
+        var relayEvent = relays[to].SubmitBlock({blockHash: blockHash});
+
+        relayEvent.watch(function(err, result) {
+          if(!err) {
+            mint(proof, to);
+          } else {
+            updateErrorUI(err);
+          }
+        });
+      });
+    } else {
+      updateErrorUI("The lock transaction has failed");
+    }
+
   });
+
 }
 

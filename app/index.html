@@ -14,14 +14,14 @@
       padding: 5px 16px;
       border-radius: 4px;
     }
-    button#changeQuota { background-color: yellow; }
+    button#ropstenButton { background-color: yellow; }
     button#buyTicket { background-color: #98fb98; }
-    button#refundTicket { background-color: pink; }
+    button#kovanButton { background-color: pink; }
     button#createWallet { background-color: #add8e6; }
     #seed {color: green;}
   </style>
   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-  <script type="text/javascript" src="../build/app.js"></script>
+  <script type="text/javascript" src="./build/app.js"></script>
 </head>
 <body>
   <h1>Chain Relay</h1>
@@ -37,7 +37,7 @@
     <h2>Kovan Chain</h2>
       Amount: <input type="text" id="amountKovan"/> 
       Recepient: <input type="text" id="receiverRopsten"/>
-      <button onclick="convertToRopsten()">Convert to Ropsten</button>
+      <button id = 'kovanButton'">Convert to Ropsten</button>
       <span></span>
   </div>
 
@@ -47,7 +47,7 @@
     <h2>Ropsten Chain</h2>
       Amount: <input type="text" id="amountRopsten"/> 
       Recipient: <input type="text" id="receiverKovan" />
-      <button onclick="convertToKovan()">Convert to Kovan</button>
+      <button id = 'ropstenButton'">Convert to Kovan</button>
       <span></span>
   </div>
 
