@@ -5,6 +5,7 @@ const keccak256 = require("js-sha3").keccak256;
 const request = require("superagent");
 const settings = require("../../cli/settings.json");
 var BigNumber = require('bignumber.js');
+var EP = require('eth-proof');
 
 
 var chainUrlMapping = {
@@ -114,11 +115,12 @@ async function submitTx(stx, chainurl){
   return result.body.result;
 }
 
+
 async function ethCall(data, chain, contractAddr){
   result = await request
   .post(chainUrlMapping.chain)
   .send({ jsonrpc :"2.0", method :"eth_call", params :[{to: contractAddr, data: data},"latest"],"id":chainIdMapping.chain})
-  return result.body.result;
+  return result;
 }
 
 async function getBlockInfo(blockHash, chain) {
@@ -136,4 +138,24 @@ async function getTransactionReceipt(txHash, chain) {
   return result.body.result;
 }
 
-module.exports = {ethCall, getBlockInfo, getTransactionReceipt, lock, unlock, mint, burn}
+// const Ropsten = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
+// const Kovan = new Web3(new Web3.providers.HttpProvider("https://kovan.infura.io"));
+
+// // TODO : Fix this(require undefined, because this is web-page)
+// const PeacerelayABI = require('../../build/contracts/PeaceRelay.json').abi;
+// const ETCTokenABI = require('../../build/contracts/ETCToken.json').abi;
+// const ETCLockingABI = require('../../build/contracts/ETCLocking.json').abi;
+
+// var PeaceRelayRopsten = new Ropsten.eth.Contract(PeacerelayABI);
+// var PeaceRelayKovan = new Kovan.eth.Contract(PeacerelayABI);
+// var ETCToken = new Ropsten.eth.Contract(ETCTokenABI);
+// var ETCLocking = new Kovan.eth.Contract(ETCLockingABI);
+
+// PeaceRelayRopsten.options.address = settings['ropsten'].peaceRelayAddress;
+// PeaceRelayKovan.options.address = settings['kovan'].peaceRelayAddress;
+// ETCToken.options.address = settings['ropsten'].etcTokenAddress;
+// ETCLocking.options.address = settings['kovan'].etcLockingAddress;
+
+// module.exports = {ethCall, getBlockInfo, getTransactionReceipt, lock, unlock, mint, burn, PeaceRelayKovan,
+//                   PeaceRelayRopsten, ETCToken, ETCLocking, EP};
+module.exports = {ethCall, mint};

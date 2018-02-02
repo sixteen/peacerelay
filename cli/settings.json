@@ -3,12 +3,15 @@
     "kovan":{
       "url": "https://kovan.infura.io",
       "chainId": 42,
-      "peaceRelayAddress": "0x9f650092D3d6D9102b2E03b56C88fe36db81443d"
+      "peaceRelayAddress": "0x18ef75ca1c64cd684990903dc8cf878a5d2cbdea",
+      "etcLockingAddress": "0x4cc1885bec2fabc9d1b21d0189727f44feafcbcf"
     },
     "ropsten":{
       "url": "https://ropsten.infura.io",
       "chainId": 3,
-      "peaceRelayAddress": "0xf77101E0931aE8437eac52c5656660cFeE8754E4"
+      "peaceRelayAddress": "0x9ec823db4c3b774e82de9d8b94185cb3d78277c7",
+      "etcTokenAddress": "0xd56dcd455a1065dd6d5cea9c6d6216c485dcde4b",
+      "privateKey": "5fba6c1ccf757875f65dca7098318be8d76dc4d7a40ded4deb14ff4e0a1bd083"
     },
     "classic":{
       "url": "",
@@ -21,3 +24,4 @@
       "peaceRelayAddress": ""
     }
   }
+

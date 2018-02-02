@@ -2,9 +2,11 @@ var EP = require('eth-proof');
 var Web3 = require('web3');
 var helper  = require('../../utils/helpers.js');
 var settings = require('../../cli/settings.json');
+var signing = require('../../test/integration/signing.js');
 const PeacerelayABI = require('../../build/contracts/PeaceRelay.json').abi;
 const ETCTokenABI = require('../../build/contracts/ETCToken.json').abi;
 const ETCLockingABI = require('../../build/contracts/ETCLocking.json').abi;
+var BigNumber = require('bignumber.js');
 
 const Ropsten = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
 const Kovan = new Web3(new Web3.providers.HttpProvider("https://kovan.infura.io"));
@@ -106,7 +108,7 @@ function updateInterface(networkId) {
 function lock(chain, amount, recipient, callback) {
   var txHash, data;
 
-  console.log("lock " + chain + " " + recipient);
+  console.log("lock " + chain + " recipient " + recipient);
   if(chain == 'kovan') {
     data = ETCLocking.lock.getData(recipient);
     web3js.eth.sendTransaction({data: data, from: web3js.eth.defaultAccount, to: settings['kovan'].etcLockingAddress, value: amount}, 
@@ -133,6 +135,7 @@ function lock(chain, amount, recipient, callback) {
 }
 
 function mint(proof, chain) {
+  var data, res;
   if(chain == 'kovan') {
     ETCLocking.unlock.sendTransaction(proof.value, proof.blockHash, 
                                       proof.path, proof.parentNodes,
@@ -142,13 +145,19 @@ function mint(proof, chain) {
                                         }
                                       });
   } else {
-    ETCToken.mint.sendTransaction(proof.value, proof.blockHash, 
-                                  proof.path, proof.parentNodes,
-                                  function(err, res) {
-                                    if(err) {
-                                      updateErrorUI(err);
-                                    }
-                                  });
+    data = ETCToken.mint.getData(proof.value, proof.blockHash, 
+                                  proof.path, proof.parentNodes);
+
+    signing.mint(data).then((res) => {
+      console.log("MINT HASH " + res);
+    });
+    // ETCToken.mint.sendTransaction(proof.value, proof.blockHash, 
+    //                               proof.path, proof.parentNodes,
+    //                               function(err, res) {
+    //                                 if(err) {
+    //                                   updateErrorUI(err);
+    //                                 }
+    //                               });
   }
 }
 
@@ -175,12 +184,13 @@ function convertToken(recipient, amount, from, to) {
     while(true) {
       receipt = Kovan.eth.getTransactionReceipt(lockTxHash);
       if(receipt != null) {
+        console.log("The lockTx has been mined into Kovan");
         break;
       }
     }
 
-    console.log(receipt.blockNumber);
-    console.log(receipt.status);
+    console.log("LockTx BlockNumber " + receipt.blockNumber);
+    console.log("LockTx Status " + receipt.status);
 
     if(receipt.status == 1) {
       EPs[from].getTransactionProof(lockTxHash).then((proof) => { 
@@ -191,17 +201,36 @@ function convertToken(recipient, amount, from, to) {
 
         window.a = relays[to];
         console.log(blockHash);
+        // var BN = chains[to].utils.BN;
         // watch the relaying block event
-        var relayEvent = relays[to].SubmitBlock({blockHash: blockHash});
+        console.log("Corresponding block hash " + blockHash);
+        // var relayEvent = relays[to].SubmitBlock({blockHash: blockHash});
 
-        relayEvent.watch(function(err, result) {
-          if(!err) {
+        // relayEvent.watch(function(err, result) {
+        //   if(!err) {
+        //     console.log("Received the relayEvent, now going to mint");
+        //     mint(proof, to);
+        //   } else {
+        //     updateErrorUI(err);
+        //   }
+        // });
+        while(true) {
+          var data = relays[to].blocks.getData(blockHash);
+          console.log("data " + data);
+          var res = Ropsten.eth.call({data: data, from: web3js.eth.defaultAccount, to: settings['ropsten'].peaceRelayAddress});
+          console.log(res);
+          if(res > 0) {
+            console.log("Have relayed successfully");
             mint(proof, to);
-          } else {
-            updateErrorUI(err);
-          }
-        });
-      });
+            break;
+          } 
+
+          // // console.log(res.body);
+          // var res = signing.ethCall(data, to, settings[to].peaceRelayAddress);
+          // console.log(res);
+      }
+    });
+
     } else {
       updateErrorUI("The lock transaction has failed");
     }
