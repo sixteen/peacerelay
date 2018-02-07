@@ -1,5 +1,3 @@
-
-
 const Web3 = require('web3')
 const request = require('superagent')
 const rlp = require('rlp')
@@ -9,12 +7,12 @@ const commandLineArgs = require('command-line-args')
 const peacerelayABI = require('./peacerelay.json')
 const submitBlock = require('./signing');
 const settings = require("./settings.json");
-const secrets = require("./secrets.json");
 
 
 const optionDefinitions = [
   { name: 'from', alias: 'f', type: String },
   { name: 'to', alias: 't', type: String },
+  {name: 'start', type: Number},
   { name: 'privateKey', alias: 'p', type: String }
 ]
 
@@ -23,31 +21,18 @@ const options = commandLineArgs(optionDefinitions)
 const from = settings[options.from].url;
 
 const to = settings[options.to];
-to.privateKey = secrets[options.to].privateKey;
+to.privateKey = settings[options.to].privateKey;
 
 const From = new Web3(new Web3.providers.HttpProvider(from));
 const To = new Web3(new Web3.providers.HttpProvider(to.url));
 
-const PeaceRelayTo = new To.eth.Contract(peacerelayABI);
+const PeaceRelayTo = new To.eth.contract(peacerelayABI);
 PeaceRelayTo.options.address = to.peaceRelayAddress;
 
-var startingBlockNumber;
+var currentBlockNumber = options.start;
+console.log('startingBlockNumber:' + currentBlockNumber);
 
-PeaceRelayTo.methods.genesisBlock().call()
-.then((result) => {
-  startingBlockNumber = result;
-});
-
- console.log(startingBlockNumber);
-
-run();
-function run() {
-  postFrom().then((result) => {
-    run();
-  }).catch((err) => {
-    console.error(err);
-  });
-}
+postFrom();
 
 /**
  * @name postForm
@@ -60,7 +45,8 @@ async function postFrom() {
     result = await request
       .post(from)
       .send({ jsonrpc: "2.0", method: "eth_blockNumber", params: [], id: 83 })
-    await catchUp(startingBlockNumber, parseInt(result.body.result, 16));
+    var highestBlockNumber = parseInt(result.body.result, 16);
+    await catchUp(highestBlockNumber);
   } catch (e) {
     console.error(e);
   }
@@ -72,28 +58,32 @@ async function postFrom() {
  * @param num
  * @returns  
  */
-async function catchUp(i, num) {
-  if (i < num - 3) {
-    const result = await relay(i);
+async function catchUp(highestBlockNumber) {
+  if (currentBlockNumber < highestBlockNumber - 3) {
+    const result = await relay(currentBlockNumber);
     if (result && result.body && result.body.error) {
-      return await catchUp(i, num)
+      return await catchUp(highestBlockNumber)
     }
-    await catchUp(i + 1, num)
+    currentBlockNumber += 1;
+    await catchUp(highestBlockNumber)
+  } else {
+    console.log('Caught up to 3rd most current block!');
+    setTimeout(async function() { await postFrom() }, (10000));
   }
 }
 
 
 async function relay(num) {
   try {
+    console.log("About to relay " + num);
     block = await From.eth.getBlock(num);
     if (block === null) {
       return await relay(num);
     }
     var BN = From.utils.BN;
-
     data = await PeaceRelayTo.methods.submitBlock(new BN(block.hash).toString(), '0x' + rlp.encode(getRawHeader(block)).toString('hex')).encodeABI();
     hash = await submitBlock(data, to);
-    return result;
+    return hash;
   } catch (e) {
     console.error(e);
   }
