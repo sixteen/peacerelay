@@ -18,7 +18,7 @@ contract PeaceRelay {
   mapping (uint256 => bool) exists;
 
 
-  modifier onlyAurhorized() {
+  modifier onlyAuthorized() {
     if (authorized[msg.sender])
       _;
   }
@@ -44,11 +44,11 @@ contract PeaceRelay {
     authorized[msg.sender] = true;
   }
 
-  function authorize(address user) onlyAurhorized {
+  function authorize(address user) onlyAuthorized {
     authorized[user] = true;
   }
 
-  function submitBlock(uint256 blockHash, bytes rlpHeader) onlyAurhorized {
+  function submitBlock(uint256 blockHash, bytes rlpHeader) onlyAuthorized {
     BlockHeader memory header = parseBlockHeader(rlpHeader);
     uint256 blockNumber = getBlockNumber(rlpHeader);
     require(exists[header.prevBlockHash]);

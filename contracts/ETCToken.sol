@@ -89,7 +89,7 @@ contract ETCToken is ERC20, SafeMath, Ownable {
 
   function burn(uint256 _value, address etcAddr) returns (bool success) {
     // safeSub already has throw, so no need to throw
-    balances[msg.sender] = safeSub(balances[msg.sender], _value) ;
+    balances[msg.sender] = safeSub(balances[msg.sender], _value);
     totalSupply = safeSub(totalSupply, _value);
     Burn(msg.sender, etcAddr, _value);
     return true;
@@ -105,10 +105,10 @@ contract ETCToken is ERC20, SafeMath, Ownable {
 
   function transferFrom(address _from, address _to, uint _value) returns (bool success) {
     var _allowance = allowed[_from][msg.sender];
-
-    balances[_to] = safeAdd(balances[_to], _value);
+    
     balances[_from] = safeSub(balances[_from], _value);
     allowed[_from][msg.sender] = safeSub(_allowance, _value);
+    balances[_to] = safeAdd(balances[_to], _value);
     Transfer(_from, _to, _value);
     return true;
   }
