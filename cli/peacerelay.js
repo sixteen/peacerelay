@@ -21,12 +21,12 @@ const options = commandLineArgs(optionDefinitions)
 const from = settings[options.from].url;
 
 const to = settings[options.to];
-to.privateKey = settings[options.to].privateKey;
+to.privateKey = settings[options.to].relayerPrivateKey;
 
 const From = new Web3(new Web3.providers.HttpProvider(from));
 const To = new Web3(new Web3.providers.HttpProvider(to.url));
 
-const PeaceRelayTo = new To.eth.contract(peacerelayABI);
+const PeaceRelayTo = new To.eth.Contract(peacerelayABI);
 PeaceRelayTo.options.address = to.peaceRelayAddress;
 
 var currentBlockNumber = options.start;
