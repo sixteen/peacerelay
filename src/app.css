@@ -1,0 +1,12 @@
+body {
+  margin: 0;
+  padding: 32px;
+  background-color: #eeeeee;
+}
+
+body .page-container {
+  width: 400px;
+  padding: 20px 32px;
+  margin: 0 auto;
+  background-color: white;
+}
