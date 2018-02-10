@@ -6,7 +6,6 @@ var signing = require('../../test/integration/signing.js');
 const PeacerelayABI = require('../../build/contracts/PeaceRelay.json').abi;
 const ETCTokenABI = require('../../build/contracts/ETCToken.json').abi;
 const ETCLockingABI = require('../../build/contracts/ETCLocking.json').abi;
-var BigNumber = require('bignumber.js');
 
 const Ropsten = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
 const Kovan = new Web3(new Web3.providers.HttpProvider("https://kovan.infura.io"));
@@ -41,6 +40,7 @@ window.addEventListener('load', function() {
   $('#ropstenButton').on('click', () => convertToKovan());
 
   $("#wait").hide();
+  $("#success").hide();
   // Checking if Web3 has been injected by the browser (Mist/MetaMask)
   if (typeof web3 !== 'undefined') {
     console.log("ABC");
@@ -79,8 +79,14 @@ window.addEventListener('load', function() {
 });
     
 
-function updateWaitingUI() {
+function updateWaitingUI(message) {
   $("#wait").show();
+  $("#message").innerHTML = message;
+}
+
+function updateSuccessUI() {
+  $("#wait").hide();
+  $("#success").show();
 }
 
 function updateErrorUI(err) {
@@ -149,6 +155,8 @@ function mint(proof, chain) {
                                   proof.path, proof.parentNodes);
 
     signing.mint(data).then((res) => {
+      // updateWaitingUI('Successfully converted');
+      updateSuccessUI();
       console.log("MINT HASH " + res);
     });
     // ETCToken.mint.sendTransaction(proof.value, proof.blockHash, 
@@ -179,12 +187,14 @@ function convertToken(recipient, amount, from, to) {
   lock(from, amount, recipient, function(lockTxHash) {
 
     console.log("LOCK TX: " + lockTxHash);
+    updateWaitingUI("Waiting for the conversion");
 
     var receipt;
     while(true) {
       receipt = Kovan.eth.getTransactionReceipt(lockTxHash);
       if(receipt != null) {
         console.log("The lockTx has been mined into Kovan");
+        updateWaitingUI('Lock Transaction is mined into Kovan');
         break;
       }
     }
@@ -196,8 +206,6 @@ function convertToken(recipient, amount, from, to) {
       EPs[from].getTransactionProof(lockTxHash).then((proof) => { 
         proof = helper.web3ify(proof);
         var blockHash = proof.blockHash;
-
-        updateWaitingUI();
 
         window.a = relays[to];
         console.log(blockHash);
@@ -221,6 +229,7 @@ function convertToken(recipient, amount, from, to) {
           console.log(res);
           if(res > 0) {
             console.log("Have relayed successfully");
+            updateWaitingUI("The transaction is relayed successfully")
             mint(proof, to);
             break;
           } 

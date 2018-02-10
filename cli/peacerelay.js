@@ -80,8 +80,7 @@ async function relay(num) {
     if (block === null) {
       return await relay(num);
     }
-    var BN = From.utils.BN;
-    data = await PeaceRelayTo.methods.submitBlock(new BN(block.hash).toString(), '0x' + rlp.encode(getRawHeader(block)).toString('hex')).encodeABI();
+    data = await PeaceRelayTo.methods.submitBlock(block.hash, '0x' + rlp.encode(getRawHeader(block)).toString('hex')).encodeABI();
     hash = await submitBlock(data, to);
     return hash;
   } catch (e) {
