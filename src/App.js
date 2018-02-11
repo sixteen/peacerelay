@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import CurrentChainInfo from './components/CurrentChainInfo.js';
 import AccountInfo from './components/AccountInfo.js';
 import ConvertTokenForm from './components/ConvertTokenForm.js';
+import TokenBalance from './components/TokenBalance.js';
 
 import './app.css'
 import getWeb3 from './utils/getWeb3'
@@ -60,6 +61,9 @@ class App extends Component {
         currNetwork = {this.state.currNetwork}
         />
         <ConvertTokenForm 
+        currNetwork = {this.state.currNetwork}
+        />
+        <TokenBalance
         currNetwork = {this.state.currNetwork}
         />
         </div>
