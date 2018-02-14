@@ -1,8 +1,8 @@
 import React, { Component } from 'react'
 import { Button, Form, FormGroup, Label, Input } from 'reactstrap'
-import { ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID } from './Constants.js';
+import { ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID, MAX_ATTEMPTS } from './Constants.js';
 import WrongNetworkModal from './WrongNetworkModal.js'
-import {submitLockTx} from '../utils/lockBurn.js'
+import LockTxStatus from './LockTxStatus.js'
 
 class ConvertTokenForm extends Component {
   constructor(props) {
@@ -52,7 +52,7 @@ class LockTokenForm extends Component {
   }
 
   handleSubmit(event) {
-    submitLockTx(this.state.recipient, this.state.ethAmt, this.props.srcChain, this.props.destChain)
+    //submitLockTx(this.state.recipient, this.state.ethAmt, this.props.srcChain, this.props.destChain)
     event.preventDefault();
   }
 
@@ -71,7 +71,14 @@ class LockTokenForm extends Component {
             <Input type='text' name="recipient" value={this.state.recipient} onChange={this.handleChange}/>
           </FormGroup>
           
-          <Button color="success" type="submit">{this.props.submitButtonText}</Button>
+          <LockTxStatus
+          ref={instance => {this.child = instance; }} 
+          recipient = {this.state.recipient}
+          ethAmt = {this.state.ethAmt}
+          srcChain = {this.props.srcChain}
+          destChain = {this.props.destChain}
+          />
+          <Button color='success' onClick={() => this.child.submitLockTx() }>{this.props.submitButtonText}</Button>
         </Form>
       </div>
     );
