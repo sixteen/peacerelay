@@ -3,3 +3,4 @@ export const MORDEN_NETWORK_ID = "2"
 export const ROPSTEN_NETWORK_ID = "3"
 export const RINKEBY_NETWORK_ID = "4"
 export const KOVAN_NETWORK_ID = "42"
+export const MAX_ATTEMPTS = 100
