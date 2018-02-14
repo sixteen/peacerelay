@@ -10,3 +10,7 @@ body .page-container {
   margin: 0 auto;
   background-color: white;
 }
+
+.tokenBalance {
+  margin-top: 3%;
+}
