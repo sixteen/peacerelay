@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import { Button, Form, FormGroup, Label, Input } from 'reactstrap'
+import { KOVAN_NETWORK_ID } from './Constants.js';
 var BigNumber = require('bignumber.js');
 
 var Web3 = require('web3');
@@ -25,10 +26,11 @@ class TokenBalance extends Component {
 			address: "0x",
 			queryNetwork: ''
 		}
-		if(this.props.currNetwork == '42') {
-			this.state.queryNetwork = 'ropsten';
+
+		if(this.props.currNetwork == KOVAN_NETWORK_ID) {
+			this.state.queryNetwork = 'Ropsten';
 		} else {
-			this.state.queryNetwork = 'kovan';
+			this.state.queryNetwork = 'Kovan';
 		}
 		this.queryBalance = this.queryBalance.bind(this);
 		this.handleChange = this.handleChange.bind(this);
@@ -58,11 +60,11 @@ class TokenBalance extends Component {
 	            		<Input type='text' name="address" value={this.state.address} onChange={this.handleChange}/>
 	          		</FormGroup>
 	          
-	          		<Button color="success" type="submit">Query</Button>
+	          		<Button color="info" type="submit">Query</Button>
 
 	          		<FormGroup>
 	            		<Label>Recipient Balance</Label>
-	            		<Input type='text' name="recipient" value={this.state.balance} onChange={this.handleChange}/>
+	            		<Input type='text' disabled name="recipient" value={this.state.balance} onChange={this.handleChange}/>
 	          		</FormGroup>
 	          	</Form>
 			</div>
