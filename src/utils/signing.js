@@ -6,7 +6,7 @@ const request = require("superagent");
 const settings = require("../../cli/settings.json");
 var BigNumber = require('bignumber.js');
 var EP = require('eth-proof');
-
+import { KOVAN_NETWORK_ID, ROPSTEN_NETWORK_ID } from '../components/Constants.js';
 
 var chainUrlMapping = {
   'kovan': "https://kovan.infura.io",
@@ -14,8 +14,8 @@ var chainUrlMapping = {
 }
 
 var chainIdMapping = {
-  'kovan': 42,
-  'ropsten': 3
+  'kovan': parseInt(KOVAN_NETWORK_ID),
+  'ropsten': parseInt(ROPSTEN_NETWORK_ID)
 }
 
 async function helper(data, chain, contractAddr, amount) {
@@ -134,7 +134,6 @@ async function getTransactionReceipt(txHash, chain) {
   let result = await request
   .post(chainUrlMapping.chain)
   .send({ jsonrpc :"2.0", method :"eth_getTransactionReceipt", params :[txHash], "id":chainIdMapping.chain})
-
   return result.body.result;
 }
 
