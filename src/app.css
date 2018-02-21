@@ -14,3 +14,11 @@ body .page-container {
 .tokenBalance {
   margin-top: 3%;
 }
+
+.pendingTxButton {
+  margin-bottom: 3%;
+}
+
+.txStatusModalCenter {
+  text-align: center;
+}
