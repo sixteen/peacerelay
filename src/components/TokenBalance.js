@@ -28,9 +28,9 @@ class TokenBalance extends Component {
 		}
 
 		if(this.props.currNetwork == KOVAN_NETWORK_ID) {
-			this.state.queryNetwork = 'Ropsten';
+			this.state.queryNetwork = 'ropsten';
 		} else {
-			this.state.queryNetwork = 'Kovan';
+			this.state.queryNetwork = 'kovan';
 		}
 		this.queryBalance = this.queryBalance.bind(this);
 		this.handleChange = this.handleChange.bind(this);
@@ -44,7 +44,6 @@ class TokenBalance extends Component {
 			to: settings['ropsten'].etcTokenAddress
 		});
 		this.setState({balance: Ropsten.fromWei(new BigNumber(balanceResult).toString(10), 'ether')});
-
 	}
 
 	handleChange(event) {
