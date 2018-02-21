@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import { Button, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap'
 import MDSpinner from 'react-md-spinner'
 import { MAX_ATTEMPTS } from './Constants.js';
 import { verify } from 'secp256k1/lib/elliptic'
@@ -26,6 +27,7 @@ var PeaceRelayRopsten = PeaceRelayRopstenContract.at(settings['ropsten'].peaceRe
 var PeaceRelayKovan = PeaceRelayKovanContract.at(settings['kovan'].peaceRelayAddress);
 var ETCToken = ETCTokenContract.at(settings['ropsten'].etcTokenAddress);
 var ETCLocking = ETCLockingContract.at(settings['kovan'].etcLockingAddress);
+var ETCTokenMintEvent = ETCToken.Mint()
 
 const EpRopsten = new EP(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
 const EpKovan = new EP(new Web3.providers.HttpProvider("https://kovan.infura.io"));
@@ -44,9 +46,17 @@ class LockTxStatus extends Component {
     
     this.state = {
       txStatus: '',
+      modal: true,
     }
 
+    this.toggle = this.toggle.bind(this);
     this.updateTxStatus = this.updateTxStatus.bind(this);
+  }
+
+  toggle() {
+    this.setState({
+      modal: !this.state.modal
+    })
   }
 
   updateTxStatus(_message) {
@@ -54,6 +64,15 @@ class LockTxStatus extends Component {
   }
 
   submitLockTx() {
+    ETCTokenMintEvent.watch(function(err,res){
+      if(!err) {
+        console.log("Tokens mined! =)")
+      }
+      else {
+        console.log("Something went wrong!")
+      }
+    })
+
     this.updateTxStatus("About to convert " + this.props.ethAmt + " ETH from " + this.props.srcChain + " to " + this.props.destChain)
     this.lock(async function(self,lockTxHash) {
       var attempts = 0;
@@ -77,6 +96,7 @@ class LockTxStatus extends Component {
           }
         });
         */
+
         attempts = 0;
         self.updateTxStatus("Waiting for block from "+ self.props.srcChain + " to be relayed to " + self.props.destChain)
         if (await self.verifyRelayData(attempts,self.props.destChain,blockHash)) {
@@ -104,25 +124,19 @@ class LockTxStatus extends Component {
         value: web3.toWei(amount),
         gas: 100000}, 
         
-        function(err, res) {
+        async function(err, res) {
           if(!err) {
+            self.updateTxStatus("Waiting for transaction to be mined....")
+            //Need to add delay, otherwise status won't be updated
+            await delay(100);
             callback(self,res);
           } else {
-            self.updateTxStatus("Transaction didn't go through.")
+            self.updateTxStatus("Transaction was rejected.")
+            await delay(1000);
+            self.updateTxStatus("");
           }
         });
-      /* TO-DO: Find a way to detect pending transactions
-      let options = {
-        fromBlock: "pending",
-        toBlock: "latest",
-        address: web3.eth.defaultAccount
-      }
-      var filter = web3.eth.filter(options)
-      filter.watch(function(err,res) {
-        if (!err)
-        console.log(res);
-      })
-      */
+
     } else {
       data = ETCToken.burn.getData(recipient);
       console.log(data)
@@ -184,18 +198,25 @@ class LockTxStatus extends Component {
                                           }
                                         });
     } else {
+      console.log('Value:' + proof.value)
+      console.log('Blockhash:' + proof.blockHash)
+      console.log('Path:' + proof.path)
+      console.log('Nodes:' + proof.parentNodes)
       data = ETCToken.mint.getData(proof.value, proof.blockHash, 
                                     proof.path, proof.parentNodes);
       this.updateTxStatus('Minting....');
       var mintHash = await signing.mint(data);
-      this.updateTxStatus("Tokens have been mined! Check this transaction in " + this.props.destChain + "!{'\n'} Transaction hash:" + mintHash);
-      // ETCToken.mint.sendTransaction(proof.value, proof.blockHash, 
-      //                               proof.path, proof.parentNodes,
-      //                               function(err, res) {
-      //                                 if(err) {
-      //                                   updateErrorUI(err);
-      //                                 }
-      //                               });
+      this.updateTxStatus("Tokens have been minted and will be credited after this transaction in " + this.props.destChain + " is mined! Transaction hash:\n" + mintHash);
+      /*
+      ETCToken.mint.sendTransaction(proof.value, proof.blockHash, 
+                                    proof.path, proof.parentNodes, 
+                                    {from: web3.eth.defaultAccount}, 
+                                    function(err,res) {
+                                      if(err) {
+                                        console.log(err);
+                                      }
+                                    })
+      */
     }
   }
   
@@ -216,13 +237,11 @@ class LockTxStatus extends Component {
   dataHasRelayed(destChain, blockHash) {
   
     var data = relays[destChain].blocks.getData(blockHash);
-    console.log("Data:" + data);
     var res = Ropsten.eth.call({
       data: data, 
       from: web3.eth.defaultAccount, 
       to: settings['ropsten'].peaceRelayAddress
     });
-    console.log('Result:' + res);
     return (res > 0);
   }
 
@@ -232,8 +251,21 @@ class LockTxStatus extends Component {
     } else {
       return (
         <div>
-        <p>{this.state.txStatus}</p>
-        <MDSpinner size={100} />
+          <Button outline color="warning" onClick={this.toggle} className="pendingTxButton">View Pending Transaction</Button>
+            <Modal isOpen={this.state.modal} toggle={this.toggle}>
+              <ModalHeader toggle={this.toggle}>Transaction</ModalHeader>
+              
+              <ModalBody className="txStatusModalCenter">
+                {this.state.txStatus}
+                <div>
+                  <MDSpinner size={50} />
+                </div>
+              </ModalBody>
+              
+              <ModalFooter>
+                <Button outline color="danger" onClick={this.toggle}>Close</Button>
+              </ModalFooter>
+            </Modal>
         </div>
       )
     }
