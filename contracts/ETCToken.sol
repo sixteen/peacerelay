@@ -34,7 +34,7 @@ contract ETCToken is ERC20, SafeMath, Ownable {
   uint8 public decimals;    //How many decimals to show.
   string public version = "v0.1";
   uint public totalSupply;
-  uint public DEPOSIT_GAS_MINIMUM = 100000; //should be constant
+  uint public DEPOSIT_GAS_MINIMUM = 500000; //should be constant
   bytes4 public LOCK_FUNCTION_SIG = 0xf435f5a7;
 
   mapping(address => uint) balances;
@@ -61,41 +61,43 @@ contract ETCToken is ERC20, SafeMath, Ownable {
   	return true;
   }
 
-  function ownerCredit(address addr, uint _amount) onlyOwner returns (bool) {
-  	balances[addr] = safeAdd(balances[addr], _amount);
-  	totalSupply = safeAdd(totalSupply, _amount);
-  	return true;
-  }
-
-  function mint(bytes value, bytes32 blockHash, bytes path, bytes parentNodes) returns (bool success) {
-    if (!rewarded[keccak256(value,blockHash,path,parentNodes)] && ETCRelay.checkTxProof(value, uint256(blockHash), path, parentNodes)) {
+  function mint(bytes value, uint256 blockHash, bytes path, bytes parentNodes) returns (bool) {
+    if (!rewarded[keccak256(value, bytes32(blockHash), path, parentNodes)] && ETCRelay.checkTxProof(value, blockHash, path, parentNodes)) {
       Transaction memory tx = getTransactionDetails(value);
-      bytes4 functionSig = getSig(tx.data);
+      bytes4 functionSig = getSignature(tx.data);
 
       require(functionSig == LOCK_FUNCTION_SIG);
       require(tx.to == etcLockingAddr);
-      require(tx.gasLimit < DEPOSIT_GAS_MINIMUM);
+      require(tx.gasLimit <= DEPOSIT_GAS_MINIMUM);
 
       address newAddress = getAddress(tx.data);
 
       totalSupply = safeAdd(totalSupply, tx.value);
       balances[newAddress] = safeAdd(balances[newAddress], tx.value);
       Mint(newAddress, tx.value);
-      rewarded[keccak256(value,blockHash,path,parentNodes)] = true;
+      rewarded[keccak256(value, bytes32(blockHash), path, parentNodes)] = true;
       return true;
     }
     return false;
   }
 
-  function burn(uint256 _value, address etcAddr) returns (bool success) {
+  function burn(uint256 _value, address etcAddr) returns (bool) {
     // safeSub already has throw, so no need to throw
     balances[msg.sender] = safeSub(balances[msg.sender], _value);
     totalSupply = safeSub(totalSupply, _value);
     Burn(msg.sender, etcAddr, _value);
     return true;
   }
-
-  function transfer(address _to, uint _value) returns (bool success) {
+  
+  function checkIfRewarded(bytes value, uint256 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
+    return rewarded[keccak256(value, bytes32(blockHash),path,parentNodes)];
+  }
+  
+    function checkProof(bytes value, uint256 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
+    return ETCRelay.checkTxProof(value, blockHash, path, parentNodes);
+  }
+  
+  function transfer(address _to, uint _value) returns (bool) {
     // safeSub already has throw, so no need to throw
     balances[msg.sender] = safeSub(balances[msg.sender], _value);
     balances[_to] = safeAdd(balances[_to], _value);
@@ -103,7 +105,7 @@ contract ETCToken is ERC20, SafeMath, Ownable {
     return true;
   }
 
-  function transferFrom(address _from, address _to, uint _value) returns (bool success) {
+  function transferFrom(address _from, address _to, uint _value) returns (bool) {
     var _allowance = allowed[_from][msg.sender];
     
     balances[_from] = safeSub(balances[_from], _value);
@@ -113,18 +115,18 @@ contract ETCToken is ERC20, SafeMath, Ownable {
     return true;
   }
 
-  function balanceOf(address _owner) constant returns (uint balance) {
+  function balanceOf(address _owner) constant returns (uint) {
     return balances[_owner];
   }
 
-  function approve(address _spender, uint _value) returns (bool success) {
+  function approve(address _spender, uint _value) returns (bool) {
     allowed[msg.sender][_spender] = _value;
     Approval(msg.sender, _spender, _value);
     return true;
   }
 
 
-  function allowance(address _owner, address _spender) constant returns (uint remaining) {
+  function allowance(address _owner, address _spender) constant returns (uint) {
     return allowed[_owner][_spender];
   }
 
@@ -133,7 +135,7 @@ contract ETCToken is ERC20, SafeMath, Ownable {
 
 
   // HELPER FUNCTIONS
-  function getSig(bytes b) constant returns (bytes4 functionSig) {
+  function getSignature(bytes b) constant returns (bytes4) {
     require(b.length >= 32);
     uint tmp = 0;
     for (uint i = 0; i < 4; i++) {
