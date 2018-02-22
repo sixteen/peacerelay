@@ -1,8 +1,9 @@
 import React, { Component } from 'react'
 import { Button, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap'
 import MDSpinner from 'react-md-spinner'
-import { MAX_ATTEMPTS } from './Constants.js';
+import { MAX_ATTEMPTS, ROPSTEN_ETHERSCAN_LINK } from './Constants.js'
 import { verify } from 'secp256k1/lib/elliptic'
+import Parser from 'html-react-parser'
 
 var EP = require('eth-proof');
 var Web3 = require('web3');
@@ -100,7 +101,7 @@ class LockTxStatus extends Component {
         attempts = 0;
         self.updateTxStatus("Waiting for block from "+ self.props.srcChain + " to be relayed to " + self.props.destChain)
         if (await self.verifyRelayData(attempts,self.props.destChain,blockHash)) {
-          await self.mint(proof,self.props.destChain);
+          await self.mint(proof,blockHash,self.props.destChain);
         } 
       } else {
         self.updateTxStatus("Lock trx failed")
@@ -187,10 +188,10 @@ class LockTxStatus extends Component {
     return blockHash;
   }
   
-  async mint(proof, chain) {
+  async mint(proof, blockHash, chain) {
     var data, res;
     if(chain == 'kovan') {
-      ETCLocking.unlock.sendTransaction(proof.value, proof.blockHash, 
+      ETCLocking.unlock.sendTransaction(proof.value, blockHash, 
                                         proof.path, proof.parentNodes,
                                         function(err, res) {
                                           if(err) {
@@ -199,14 +200,14 @@ class LockTxStatus extends Component {
                                         });
     } else {
       console.log('Value:' + proof.value)
-      console.log('Blockhash:' + proof.blockHash)
+      console.log('Blockhash:' + blockHash)
       console.log('Path:' + proof.path)
       console.log('Nodes:' + proof.parentNodes)
-      data = ETCToken.mint.getData(proof.value, proof.blockHash, 
+      data = ETCToken.mint.getData(proof.value, blockHash, 
                                     proof.path, proof.parentNodes);
       this.updateTxStatus('Minting....');
       var mintHash = await signing.mint(data);
-      this.updateTxStatus("Tokens have been minted and will be credited after this transaction in " + this.props.destChain + " is mined! Transaction hash:\n" + mintHash);
+      this.updateTxStatus("Tokens have been minted and will be credited after <a href='" + ROPSTEN_ETHERSCAN_LINK + mintHash + "' target='_blank'>this transaction</a> has been mined.");
       /*
       ETCToken.mint.sendTransaction(proof.value, proof.blockHash, 
                                     proof.path, proof.parentNodes, 
@@ -256,7 +257,7 @@ class LockTxStatus extends Component {
               <ModalHeader toggle={this.toggle}>Transaction</ModalHeader>
               
               <ModalBody className="txStatusModalCenter">
-                {this.state.txStatus}
+                {Parser(this.state.txStatus)}
                 <div>
                   <MDSpinner size={50} />
                 </div>
