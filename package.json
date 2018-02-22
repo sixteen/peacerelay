@@ -35,6 +35,7 @@
     "eth-proof": "^0.2.1",
     "ethereumjs-block": "^1.7.0",
     "ethereumjs-tx": "^1.3.3",
+    "html-react-parser": "^0.4.2",
     "js-sha3": "^0.7.0",
     "react": "^15.6.2",
     "react-dom": "^15.6.2",
