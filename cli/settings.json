@@ -10,7 +10,7 @@
       "url": "https://ropsten.infura.io",
       "chainId": 3,
       "peaceRelayAddress": "0x9ec823db4c3b774e82de9d8b94185cb3d78277c7",
-      "etcTokenAddress": "0xd56dcd455a1065dd6d5cea9c6d6216c485dcde4b",
+      "etcTokenAddress": "0x4e84d845891916d2ea702dedc42cf73ea8bc349a",
       "privateKey": "5fba6c1ccf757875f65dca7098318be8d76dc4d7a40ded4deb14ff4e0a1bd083",
       "relayerPrivateKey": "be24bb70dae30dc67b944b860a3c26eb16588b3b197a9fbcad1395ede2cd9d50"
     },
