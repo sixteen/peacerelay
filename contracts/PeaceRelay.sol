@@ -8,19 +8,23 @@ contract PeaceRelay {
   using RLP for RLP.Iterator;
   using RLP for bytes;
 
-  uint[] tips;
+  uint256 public genesisBlock;
   uint256 public highestBlock;
+  uint256 private owner;
 
   mapping (address => bool) authorized;
   mapping (uint256 => BlockHeader) public blocks;
-  
-  mapping (uint256 => bool) tip;
-  mapping (uint256 => bool) exists;
 
+  modifier onlyOwner() {
+    if (owner == msg.sender) {
+      _;
+    }
+  }
 
   modifier onlyAuthorized() {
-    if (authorized[msg.sender])
+    if (authorized[msg.sender]) {
       _;
+    }
   }
 
   struct BlockHeader {
@@ -35,31 +39,31 @@ contract PeaceRelay {
   event TxRootEvent(bytes32 txRoot);
   event SubmitBlock(uint256 blockHash, address submitter);
 
-  function PeaceRelay(uint256 blockNumber, uint256 blockHash, bytes rlpHeader) {
+  function PeaceRelay(uint256 blockNumber) {
+    genesisBlock = blockNumber;
     highestBlock = blockNumber;
-    exists[blockHash] = true;
-    tip[blockHash] = true;
-    BlockHeader memory header = parseBlockHeader(rlpHeader);
-    blocks[blockHash] = header;
     authorized[msg.sender] = true;
+    owner = msg.sender;
   }
 
-  function authorize(address user) onlyAuthorized {
+  function authorize(address user) onlyOwner {
     authorized[user] = true;
+  }
+
+  function deAuthorize(address user) onlyOwner {
+    authorized[user] = false;
+  }
+
+  function resetGenesisBlock(uint256 blockNumber) onlyAuthorized {
+    genesisBlock = blockNumber;
   }
 
   function submitBlock(uint256 blockHash, bytes rlpHeader) onlyAuthorized {
     BlockHeader memory header = parseBlockHeader(rlpHeader);
     uint256 blockNumber = getBlockNumber(rlpHeader);
-    require(exists[header.prevBlockHash]);
-    if (tip[header.prevBlockHash]) {
-      tip[header.prevBlockHash] = false;
-    }
     if (blockNumber > highestBlock) {
       highestBlock = blockNumber;
     }
-    tip[blockHash] = true;
-    exists[blockHash] = true;
     blocks[blockHash] = header;
     // There is at least one orphan
     SubmitBlock(blockHash, msg.sender);
