@@ -156,9 +156,9 @@ contract ETCToken is ERC20, SafeMath, Ownable {
     }
   }
 
-  //rlpTransaction is a value at the bottom of the transaction trie.
-  function getTransactionDetails(bytes rlpTransaction) constant internal returns (Transaction memory tx) {
-    RLP.RLPItem[] memory list = rlpTransaction.toRLPItem().toList();
+  //txValue is a value at the bottom of the transaction trie.
+  function getTransactionDetails(bytes txValue) constant internal returns (Transaction memory tx) {
+    RLP.RLPItem[] memory list = txValue.toRLPItem().toList();
     tx.gasPrice = list[1].toUint();
     tx.gasLimit = list[2].toUint();
     tx.to = address(list[3].toUint());
@@ -166,7 +166,7 @@ contract ETCToken is ERC20, SafeMath, Ownable {
     //Ugly hard coding for now. Can only parse burn transactions.
     tx.data = new bytes(36);
     for (uint i = 0; i < 36; i++) {
-      tx.data[i] = rlpTransaction[rlpTransaction.length - 103 + i];
+      tx.data[i] = txValue[txValue.length - 103 + i];
     }
     return tx;
   }
