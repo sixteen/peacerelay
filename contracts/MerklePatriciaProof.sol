@@ -4,7 +4,7 @@
  *
  * @dev Library for verifing merkle patricia proofs.
  */
-
+pragma solidity ^0.4.8;
 import "./RLP.sol";
 
 library MerklePatriciaProof {
@@ -33,12 +33,12 @@ library MerklePatriciaProof {
       if (pathPtr > path.length) {return false;}
 
       currentNode = RLP.toBytes(parentNodes[i]);
-      if (nodeKey != sha3(currentNode)) {return false;}
+      if (nodeKey != keccak256(currentNode)) {return false;}
       currentNodeList = RLP.toList(parentNodes[i]);
 
       if (currentNodeList.length == 17) {
         if (pathPtr == path.length) {
-          if (sha3(RLP.toBytes(currentNodeList[16])) == sha3(value)) {
+          if (keccak256(RLP.toBytes(currentNodeList[16])) == keccak256(value)) {
             return true;
           } else {
             return false;
@@ -53,7 +53,7 @@ library MerklePatriciaProof {
         pathPtr += _nibblesToTraverse(RLP.toData(currentNodeList[0]), path, pathPtr);
 
         if (pathPtr == path.length) {//leaf node
-          if (sha3(RLP.toData(currentNodeList[1])) == sha3(value)) {
+          if (keccak256(RLP.toData(currentNodeList[1])) == keccak256(value)) {
             return true;
           } else {
             return false;
@@ -85,7 +85,7 @@ library MerklePatriciaProof {
       slicedPath[i-pathPtr] = pathNibble;
     }
 
-    if (sha3(partialPath) == sha3(slicedPath)) {
+    if (keccak256(partialPath) == keccak256(slicedPath)) {
       len = partialPath.length;
     } else {
       len = 0;
