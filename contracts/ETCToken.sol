@@ -56,9 +56,12 @@ contract ETCToken is ERC20, SafeMath, Ownable {
   }
 
 
-  function setETCLockingAddr(address _etcLockingAddr) onlyOwner returns (bool) {
+  function changePeaceRelayAddr(address _peaceRelayAddr) onlyOwner {
+    ETCRelay = PeaceRelay(_peaceRelayAddr);
+  }
+
+  function changeETCLockingAddr(address _etcLockingAddr) onlyOwner {
   	etcLockingAddr = _etcLockingAddr;
-  	return true;
   }
 
   function mint(bytes value, uint256 blockHash, bytes path, bytes parentNodes) returns (bool) {

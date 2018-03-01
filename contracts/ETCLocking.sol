@@ -3,6 +3,7 @@ pragma solidity ^0.4.8;
 import "./SafeMath.sol";
 import "./PeaceRelay.sol";
 import "./RLP.sol";
+import "./Ownable.sol";
 
 contract ETCLocking is SafeMath {
 
@@ -14,11 +15,19 @@ contract ETCLocking is SafeMath {
   string public version = "v0.1";
   uint public totalSupply;
   bytes4 public BURN_FUNCTION_SIG = 0xfcd3533c;
+  address public owner;
 
   mapping(address => uint) balances;
   mapping (address => mapping (address => uint)) allowed;
+  mapping(bytes32 => bool) rewarded;
   PeaceRelay public ETHRelay;
   address etcTokenAddr; //maybe rename to EthLockingContract
+
+  modifier onlyOwner() {
+    if (owner == msg.sender) {
+      _;
+    }
+  }
 
   struct Transaction {
     uint gasPrice;
@@ -43,24 +52,34 @@ contract ETCLocking is SafeMath {
     etcTokenAddr = _etcTokenAddr;
   }
 
-  function test() {
-    totalSupply = 20;
+  function changePeaceRelayAddr(address _peaceRelayAddr) onlyOwner {
+    ETHRelay = PeaceRelay(_peaceRelayAddr);
+  }
+
+  function changeETCTokenAddr(address _etcTokenAddr) onlyOwner {
+    etcTokenAddr = _etcTokenAddr;
   }
 
   function unlock(
-    bytes32 blockHash, 
-    bytes txValue, bytes32 txBlockHash, bytes txPath, bytes txParentNodes, bytes rlpTransaction,
-    bytes recValue, bytes32 recBlockHash, bytes recPath, bytes recParentNodes, bytes rlpReceipt
+    bytes txValue, uint256 txBlockHash, bytes txPath, bytes txParentNodes,
+    bytes recValue, bytes recPath, bytes recParentNodes
   ) returns (bool success) {
-    if (ETHRelay.checkReceiptProof(recValue, uint256(recBlockHash), recPath, recParentNodes)) {
-      Log memory log = getReceiptDetails(rlpReceipt);
+    
+    if (rewarded[keccak256(txValue, bytes32(txBlockHash), txPath, txParentNodes)] || rewarded[keccak256(recValue, bytes32(txBlockHash), recPath, recParentNodes)]) {
+      return false;
+    }
 
-      if (ETHRelay.checkTxProof(txValue, uint256(txBlockHash), txPath, txParentNodes)) {
+    if (ETHRelay.checkReceiptProof(recValue, txBlockHash, recPath, recParentNodes)) {
+      Log memory log = getReceiptDetails(recValue);
+
+      if (ETHRelay.checkTxProof(txValue, txBlockHash, txPath, txParentNodes)) {
           Transaction memory tx = getTransactionDetails(txValue);
           assert (getSig(tx.data) == BURN_FUNCTION_SIG);
           assert (tx.to == etcTokenAddr);
 
           totalSupply = safeSub(totalSupply, log.value);
+          rewarded[keccak256(txValue, bytes32(txBlockHash), txPath, txParentNodes)] = true;
+          rewarded[keccak256(recValue, bytes32(txBlockHash), recPath, recParentNodes)] = true;
           log.etcAddr.transfer(log.value);
           assert(totalSupply == this.balance);
           Unlocked(log.etcAddr, log.value);
@@ -102,7 +121,7 @@ contract ETCLocking is SafeMath {
   }
 
   // rlpTransaction is a value at the bottom of the transaction trie.
-  function testGetReceiptDetails(bytes rlpReceipt) constant  returns (address, address, uint) {
+  function testGetReceiptDetails(bytes rlpReceipt) constant returns (address, address, uint) {
     RLP.RLPItem[] memory receipt = rlpReceipt.toRLPItem().toList();
     RLP.RLPItem[] memory logs = receipt[3].toList();
     RLP.RLPItem[] memory log = logs[0].toList();
