@@ -21,7 +21,7 @@ contract ETCLocking is SafeMath {
   mapping (address => mapping (address => uint)) allowed;
   mapping(bytes32 => bool) rewarded;
   PeaceRelay public ETHRelay;
-  address etcTokenAddr; //maybe rename to EthLockingContract
+  address public etcTokenAddr; //maybe rename to EthLockingContract
 
   modifier onlyOwner() {
     if (owner == msg.sender) {
