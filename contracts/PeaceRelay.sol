@@ -10,7 +10,7 @@ contract PeaceRelay {
 
   uint256 public genesisBlock;
   uint256 public highestBlock;
-  uint256 private owner;
+  address private owner;
 
   mapping (address => bool) authorized;
   mapping (uint256 => BlockHeader) public blocks;
