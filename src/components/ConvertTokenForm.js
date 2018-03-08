@@ -3,7 +3,7 @@ import { Button, Form, FormGroup, Label, Input } from 'reactstrap'
 import { ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID, MAX_ATTEMPTS } from './Constants.js';
 import WrongNetworkModal from './WrongNetworkModal.js'
 import LockTxStatus from './LockTxStatus.js'
-
+import BurnTxStatus from './BurnTxStatus.js'
 class ConvertTokenForm extends Component {
   constructor(props) {
     super(props)
@@ -13,18 +13,20 @@ class ConvertTokenForm extends Component {
     const currNetwork = this.props.currNetwork;
     if (currNetwork == ROPSTEN_NETWORK_ID) {
       return (
-      <LockTokenForm
+      <TokenForm
       srcChain = 'ropsten'
       destChain = 'kovan'
-      submitButtonText = 'Convert To Kovan'
+      submitButtonText = 'Convert Back To Kovan'
+      isLock  = {false}
       />
       );
     } else if (currNetwork == KOVAN_NETWORK_ID) {
       return (
-      <LockTokenForm 
+      <TokenForm 
       srcChain = 'kovan'
       destChain = 'ropsten'
       submitButtonText = 'Convert To Ropsten'
+      isLock = {true}
       />
       );
     } else {
@@ -35,7 +37,7 @@ class ConvertTokenForm extends Component {
   }
 }
 
-class LockTokenForm extends Component {
+class TokenForm extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -58,7 +60,7 @@ class LockTokenForm extends Component {
 
   render() {
     return (
-      <div className="LockTokenForm">
+      <div className="TokenForm">
         <Form onSubmit={this.handleSubmit}>
         
           <FormGroup>
@@ -71,6 +73,17 @@ class LockTokenForm extends Component {
             <Input type='text' name="recipient" value={this.state.recipient} onChange={this.handleChange}/>
           </FormGroup>
           
+          <LockOrBurn 
+          isLock={this.props.isLock}
+          recipient={this.state.recipient} 
+          ethAmt={this.state.ethAmt}
+          srcChain={this.props.srcChain}
+          destChain={this.props.destChain}
+          submitButtonText={this.props.submitButtonText}
+          parent={this}
+          />
+
+          {/*}
           <LockTxStatus
           ref={instance => {this.child = instance; }} 
           recipient = {this.state.recipient}
@@ -78,10 +91,43 @@ class LockTokenForm extends Component {
           srcChain = {this.props.srcChain}
           destChain = {this.props.destChain}
           />
-          <Button color='success' onClick={() => this.child.submitLockTx() }>{this.props.submitButtonText}</Button>
+          <Button color='success' onClick={() => this.child.submitLockTx()}>{this.props.submitButtonText}</Button>
+          */}
+
         </Form>
       </div>
     );
+  }
+}
+
+function LockOrBurn(props) {
+  const isLock = props.isLock
+  if (isLock) {
+    return (
+    <div>
+    <LockTxStatus
+    ref={instance => {props.parent.child = instance; }} 
+    recipient = {props.recipient}
+    ethAmt = {props.ethAmt}
+    srcChain = {props.srcChain}
+    destChain = {props.destChain}
+    />
+    <Button color='success' onClick={() => props.parent.child.submitLockTx() }>{props.submitButtonText}</Button>
+    </div>
+    )
+  } else {
+    return (
+    <div>
+    <BurnTxStatus
+    ref={instance => {props.parent.child = instance; }} 
+    recipient = {props.recipient}
+    ethAmt = {props.ethAmt}
+    srcChain = {props.srcChain}
+    destChain = {props.destChain}
+    />
+    <Button color='danger' onClick={() => props.parent.child.submitBurnTx() }>{props.submitButtonText}</Button> 
+    </div>
+    )
   }
 }
 

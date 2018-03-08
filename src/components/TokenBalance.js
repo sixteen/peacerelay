@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import { Button, Form, FormGroup, Label, Input } from 'reactstrap'
 import { KOVAN_NETWORK_ID } from './Constants.js';
+
 var BigNumber = require('bignumber.js');
 
 var Web3 = require('web3');
@@ -38,12 +39,13 @@ class TokenBalance extends Component {
 
 	queryBalance(event) {
 		event.preventDefault();
+		console.log(contracts[this.state.queryNetwork])
 		var data = contracts[this.state.queryNetwork].balanceOf.getData(this.state.address);
 		var balanceResult = networks[this.state.queryNetwork].eth.call({
 			data: data,
 			to: settings['ropsten'].etcTokenAddress
 		});
-		this.setState({balance: Ropsten.fromWei(new BigNumber(balanceResult).toString(10), 'ether')});
+		this.setState({balance: Ropsten.fromWei(balanceResult, 'ether')});
 	}
 
 	handleChange(event) {

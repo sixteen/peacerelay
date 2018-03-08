@@ -78,9 +78,9 @@ class LockTxStatus extends Component {
     this.lock(async function(self,lockTxHash) {
       var attempts = 0;
       var receipt = self.getTransactionReceipt(attempts,lockTxHash);
-      
       self.updateTxStatus("Checking vaildity of transaction...")
       if(self.isValidReceipt(receipt.status)) {
+        console.log(receipt)
         let proof = await self.getProofFromTxHash(lockTxHash,self.props.srcChain);
         let blockHash = proof.blockHash;
         blockHash = self.convertBlockHashToBigNumFormat(blockHash);
@@ -139,22 +139,9 @@ class LockTxStatus extends Component {
         });
 
     } else {
-      data = ETCToken.burn.getData(recipient);
-      console.log(data)
-      await web3.eth.sendTransaction({
-        data: data, 
-        from: web3.eth.defaultAccount, 
-        to: settings['ropsten'].etcTokenAddress, 
-        value: web3.toWei(amount)}, 
-        
-        function(err, res) {
-          if(!err) {
-            txHash = res;
-          } else {
-            console.log(err)
-          }
-        });
-      }
+      self.updateTxStatus("This function has not been implemented in the " + this.props.srcChain + "network yet. \
+      Kindly use the " + this.props.destChain + "network.")
+    }
   }
 
   getTransactionReceipt(attempts,lockTxHash) {
@@ -182,42 +169,27 @@ class LockTxStatus extends Component {
     return proof;
   }
   
-  convertBlockHashToBigNumFormat(blockHash) {  
+  convertBlockHashToBigNumFormat(blockHash) {
     blockHash = new BN(blockHash).toString();
     console.log("Block hash in Big Number:" + blockHash);
     return blockHash;
   }
   
-  async mint(proof, blockHash, chain) {
+  async mint(txProof, blockHash, destChain) {
     var data, res;
-    if(chain == 'kovan') {
-      ETCLocking.unlock.sendTransaction(proof.value, blockHash, 
-                                        proof.path, proof.parentNodes,
-                                        function(err, res) {
-                                          if(err) {
-                                            console.log(err);
-                                          }
-                                        });
-    } else {
-      console.log('Value:' + proof.value)
+    if(destChain == 'ropsten') {
+      console.log('Value:' + txProof.value)
       console.log('Blockhash:' + blockHash)
-      console.log('Path:' + proof.path)
-      console.log('Nodes:' + proof.parentNodes)
-      data = ETCToken.mint.getData(proof.value, blockHash, 
-                                    proof.path, proof.parentNodes);
+      console.log('Path:' + txProof.path)
+      console.log('Nodes:' + txProof.parentNodes)
+      
+      data = ETCToken.mint.getData(txProof.value, blockHash, 
+                                    txProof.path, txProof.parentNodes);
       this.updateTxStatus('Minting....');
       var mintHash = await signing.mint(data);
-      this.updateTxStatus("Tokens have been minted and will be credited after <a href='" + ROPSTEN_ETHERSCAN_LINK + mintHash + "' target='_blank'>this transaction</a> has been mined.");
-      /*
-      ETCToken.mint.sendTransaction(proof.value, proof.blockHash, 
-                                    proof.path, proof.parentNodes, 
-                                    {from: web3.eth.defaultAccount}, 
-                                    function(err,res) {
-                                      if(err) {
-                                        console.log(err);
-                                      }
-                                    })
-      */
+      this.updateTxStatus("Tokens have been minted and will be credited after <a href='" + ROPSTEN_ETHERSCAN_LINK + mintHash + "' target='_blank'>this transaction</a> has been mined.");      
+    } else {
+      this.updateTxStatus("Wrong destination network.")
     }
   }
   
