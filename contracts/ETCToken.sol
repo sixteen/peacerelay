@@ -37,9 +37,9 @@ contract ETCToken is ERC20, SafeMath, Ownable {
   uint public DEPOSIT_GAS_MINIMUM = 500000; //should be constant
   bytes4 public LOCK_FUNCTION_SIG = 0xf435f5a7;
 
-  mapping(address => uint) balances;
-  mapping(address => mapping (address => uint)) allowed;
-  mapping(bytes32 => bool) rewarded;
+  mapping(address => uint) public balances;
+  mapping(address => mapping (address => uint)) public allowed;
+  mapping(bytes32 => bool) public rewarded;
 
   PeaceRelay public ETCRelay;
   address public etcLockingAddr; //maybe rename to EthLockingContract
@@ -84,11 +84,11 @@ contract ETCToken is ERC20, SafeMath, Ownable {
     return false;
   }
 
-  function burn(uint256 _value, address etcAddr) returns (bool) {
+  function burn(uint256 _value, address _etcAddr) returns (bool) {
     // safeSub already has throw, so no need to throw
     balances[msg.sender] = safeSub(balances[msg.sender], _value);
     totalSupply = safeSub(totalSupply, _value);
-    Burn(msg.sender, etcAddr, _value);
+    Burn(msg.sender, _etcAddr, _value);
     return true;
   }
   
@@ -96,8 +96,24 @@ contract ETCToken is ERC20, SafeMath, Ownable {
     return rewarded[keccak256(value, bytes32(blockHash),path,parentNodes)];
   }
   
-    function checkProof(bytes value, uint256 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
+  function checkProof(bytes value, uint256 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
     return ETCRelay.checkTxProof(value, blockHash, path, parentNodes);
+  }
+
+  function checkFnSig(bytes value) returns (bool) {
+    Transaction memory tx = getTransactionDetails(value);
+    bytes4 functionSig = getSignature(tx.data);
+    return (functionSig == LOCK_FUNCTION_SIG);
+  }
+
+  function checkLockingAddr(bytes value) returns (bool) {
+    Transaction memory tx = getTransactionDetails(value);
+    return (tx.to == etcLockingAddr);
+  }
+  
+  function checkGasLimit(bytes value) returns (bool) {
+    Transaction memory tx = getTransactionDetails(value);
+    return (tx.gasLimit <= DEPOSIT_GAS_MINIMUM);
   }
   
   function transfer(address _to, uint _value) returns (bool) {

@@ -50,6 +50,7 @@ contract ETCLocking is SafeMath {
     totalSupply = 0;
     ETHRelay = PeaceRelay(_peaceRelayAddr);
     etcTokenAddr = _etcTokenAddr;
+    owner = msg.sender;
   }
 
   function changePeaceRelayAddr(address _peaceRelayAddr) onlyOwner {

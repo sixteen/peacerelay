@@ -10,7 +10,7 @@ contract PeaceRelay {
 
   uint256 public genesisBlock;
   uint256 public highestBlock;
-  address private owner;
+  address public owner;
 
   mapping (address => bool) authorized;
   mapping (uint256 => BlockHeader) public blocks;
@@ -56,6 +56,7 @@ contract PeaceRelay {
 
   function resetGenesisBlock(uint256 blockNumber) onlyAuthorized {
     genesisBlock = blockNumber;
+    highestBlock = blockNumber;
   }
 
   function submitBlock(uint256 blockHash, bytes rlpHeader) onlyAuthorized {
