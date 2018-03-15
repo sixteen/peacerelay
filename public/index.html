@@ -3,9 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="%PUBLIC_URL%/icon.png">
+    <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.png">
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json">
-    <meta name="theme-color" content="#222">
     <!--
       Notice the use of %PUBLIC_URL% in the tag above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -18,6 +17,7 @@
     <title>Peace Relay</title>
   </head>
   <body>
+    <div id="root">Loading...</div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
@@ -28,11 +28,5 @@
       To begin the development, run `npm start`.
       To create a production bundle, use `npm run build`.
     -->
-    <div id="root">Loading...</div>
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js');
-      }
-    </script>
   </body>
 </html>
