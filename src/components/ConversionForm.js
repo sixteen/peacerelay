@@ -1,37 +1,50 @@
 import React, { Component } from 'react'
-import { Button, Form, FormGroup, Label, Input } from 'reactstrap'
-import { ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID, MAX_ATTEMPTS } from './Constants.js';
+import { Jumbotron, Button, Form, FormGroup, Label, Input } from 'reactstrap'
+import { ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID } from './Constants.js';
 import WrongNetworkModal from './WrongNetworkModal.js'
 import LockTxStatus from './LockTxStatus.js'
 import BurnTxStatus from './BurnTxStatus.js'
-class ConvertTokenForm extends Component {
+
+export default class ConversionForm extends Component {
   constructor(props) {
     super(props)
   }
 
   render() {
-    const currNetwork = this.props.currNetwork;
+    const currNetwork = this.props.network;
     if (currNetwork == ROPSTEN_NETWORK_ID) {
       return (
-      <TokenForm
-      srcChain = 'ropsten'
-      destChain = 'kovan'
-      submitButtonText = 'Convert Back To Kovan'
-      isLock  = {false}
-      />
+      <div>
+        <h1 className="conversionFormTitle">Ropsten to Kovan</h1>
+        <hr />
+        <TokenForm
+        web3={this.props.web3}
+        srcChain='ropsten'
+        destChain='kovan'
+        submitButtonText='Convert Back To Kovan'
+        isLock  = {false}
+        />
+      </div>
       );
     } else if (currNetwork == KOVAN_NETWORK_ID) {
       return (
-      <TokenForm 
-      srcChain = 'kovan'
-      destChain = 'ropsten'
-      submitButtonText = 'Convert To Ropsten'
-      isLock = {true}
-      />
+      <div>
+        <h1 className="conversionFormTitle">Kovan to Ropsten</h1>
+        <hr className="divider"/>
+        <TokenForm 
+        web3={this.props.web3}
+        srcChain='kovan'
+        destChain='ropsten'
+        submitButtonText='Convert To Ropsten'
+        isLock={true}
+        />
+      </div>
       );
     } else {
       return (
-      <WrongNetworkModal />
+      <Jumbotron>
+        <h1>Wrong network</h1>
+      </Jumbotron>
       )
     }
   }
@@ -41,6 +54,7 @@ class TokenForm extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      web3: this.props.web3,
       ethAmt: 0,
       recipient: '',
     }
@@ -60,7 +74,7 @@ class TokenForm extends Component {
 
   render() {
     return (
-      <div className="TokenForm">
+      <div className="tokenForm">
         <Form onSubmit={this.handleSubmit}>
         
           <FormGroup>
@@ -130,5 +144,3 @@ function LockOrBurn(props) {
     )
   }
 }
-
-export default ConvertTokenForm

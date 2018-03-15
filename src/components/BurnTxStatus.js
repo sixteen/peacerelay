@@ -1,43 +1,16 @@
 import React, { Component } from 'react'
 import { Button, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap'
 import MDSpinner from 'react-md-spinner'
-import { MAX_ATTEMPTS, ROPSTEN_ETHERSCAN_LINK } from './Constants.js'
+import { MAX_ATTEMPTS, KOVAN_ETHERSCAN_LINK, InfuraKovan, InfuraRopsten, 
+  ETCToken, ETCLocking, ETC_TOKEN_ADDRESS, EPs, RELAYS, PEACE_RELAY_ADDRESS_KOVAN} from './Constants.js'
 import { verify } from 'secp256k1/lib/elliptic'
 import Parser from 'html-react-parser'
 
-var EP = require('eth-proof');
-var Web3 = require('web3');
 var helper  = require('../../utils/helpers.js');
 var BN = require('bn.js');
-var settings = require('../../cli/settings.json');
+
 var signing = require('../utils/signing.js');
-const PeacerelayABI = require('../../build/contracts/PeaceRelay.json').abi;
-const ETCTokenABI = require('../../build/contracts/ETCToken.json').abi;
-const ETCLockingABI = require('../../build/contracts/ETCLocking.json').abi;
-
 var web3 = window.web3
-const Ropsten = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
-const Kovan = new Web3(new Web3.providers.HttpProvider("https://kovan.infura.io"));
-
-var PeaceRelayRopstenContract = Ropsten.eth.contract(PeacerelayABI);
-var PeaceRelayKovanContract = Kovan.eth.contract(PeacerelayABI);
-var ETCTokenContract = Ropsten.eth.contract(ETCTokenABI);
-var ETCLockingContract = Kovan.eth.contract(ETCLockingABI);
- 
-var PeaceRelayRopsten = PeaceRelayRopstenContract.at(settings['ropsten'].peaceRelayAddress);
-var PeaceRelayKovan = PeaceRelayKovanContract.at(settings['kovan'].peaceRelayAddress);
-var ETCToken = ETCTokenContract.at(settings['ropsten'].etcTokenAddress);
-var ETCLocking = ETCLockingContract.at(settings['kovan'].etcLockingAddress);
-
-const EpRopsten = new EP(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
-const EpKovan = new EP(new Web3.providers.HttpProvider("https://kovan.infura.io"));
-
-var EPs = {'kovan': EpKovan, 'ropsten': EpRopsten};
-var chainMapping = {'1': 'mainnet', '3': 'ropsten', '42': 'kovan'};
-var relays = {'kovan': PeaceRelayKovan, 'ropsten': PeaceRelayRopsten};
-var helpers = {'kovan': ETCLocking, 'ropsten': ETCToken};
-var chains = {'kovan': Kovan, 'ropsten': Ropsten};
-
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 class BurnTxStatus extends Component {
@@ -69,7 +42,6 @@ class BurnTxStatus extends Component {
     this.burn(async function(self,burnTxHash) {
       var attempts = 0;
       var receipt = self.getTransactionReceipt(attempts,burnTxHash);
-      console.log(receipt)
 
       self.updateTxStatus("Checking vaildity of transaction...")
       if(self.isValidReceipt(receipt.status)) {
@@ -115,21 +87,19 @@ class BurnTxStatus extends Component {
     amount = this.props.ethAmt,
     self = this
 
-    console.log('To burn:' + web3.toWei(amount))
-
     if(chain == 'ropsten') {
       data = ETCToken.burn.getData(web3.toWei(amount),recipient);
       await web3.eth.sendTransaction({
         data: data, 
         from: web3.eth.defaultAccount, 
-        to: settings['ropsten'].etcTokenAddress, 
+        to: ETC_TOKEN_ADDRESS, 
         gas: 100000}, 
         
         async function(err, res) {
           if(!err) {
             self.updateTxStatus("Waiting for transaction to be mined....")
             //Need to add delay, otherwise status won't be updated
-            await delay(100);
+            await delay(1000);
             callback(self,res);
           } else {
             self.updateTxStatus("Transaction was rejected.")
@@ -150,7 +120,7 @@ class BurnTxStatus extends Component {
       return null
     }
   
-    let receipt = Ropsten.eth.getTransactionReceipt(lockTxHash);
+    let receipt = InfuraRopsten.eth.getTransactionReceipt(lockTxHash);
     if (!receipt) {
       //receipt is null, try again
       return this.getTransactionReceipt(attempts+1,lockTxHash);
@@ -167,7 +137,6 @@ class BurnTxStatus extends Component {
     let txProof = await EPs[srcChain].getTransactionProof(lockTxHash);
     txProof = helper.web3ify(txProof);
     let receiptProof = await EPs[srcChain].getReceiptProof(lockTxHash);
-    console.log(receiptProof)
     receiptProof = helper.web3ify(receiptProof);
     return [txProof,receiptProof];
   }
@@ -181,15 +150,12 @@ class BurnTxStatus extends Component {
   async unlock(txProof, receiptProof, blockHash, destChain) {
     var data, res;
     if(destChain == 'kovan') {
-      ETCLocking.unlock.sendTransaction(txProof.value, blockHash, 
-                                        txProof.path, txProof.parentNodes,
-                                        receiptProof.value, receiptProof.path,
-                                        receiptProof.parentNodes,
-                                        function(err, res) {
-                                          if(err) {
-                                            console.log(err);
-                                          }
-                                        });
+      data = ETCLocking.unlock.getData(txProof.value, blockHash, txProof.path, txProof.parentNodes,
+      receiptProof.value, receiptProof.path, receiptProof.parentNodes)
+
+      let unlockHash = await signing.unlock(data);
+      this.updateTxStatus("Waiting for <a href='" + KOVAN_ETHERSCAN_LINK + unlockHash + "' target='_blank'>this transaction</a> to be mined."); 
+      
     } else {
         this.updateTxStatus("Wrong destination network.")
     }
@@ -211,11 +177,11 @@ class BurnTxStatus extends Component {
   
   dataHasRelayed(destChain, blockHash) {
   
-    var data = relays[destChain].blocks.getData(blockHash);
-    var res = Kovan.eth.call({
+    var data = RELAYS[destChain].blocks.getData(blockHash);
+    var res = InfuraKovan.eth.call({
       data: data, 
       from: web3.eth.defaultAccount, 
-      to: settings['kovan'].peaceRelayAddress
+      to: PEACE_RELAY_ADDRESS_KOVAN
     });
     return (res > 0);
   }
