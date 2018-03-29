@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
-import { Jumbotron, Button, Form, FormGroup, Label, Input } from 'reactstrap'
-import { ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID } from './Constants.js';
-import WrongNetworkModal from './WrongNetworkModal.js'
-import LockTxStatus from './LockTxStatus.js'
-import BurnTxStatus from './BurnTxStatus.js'
+import { Jumbotron, Row, Col, Button, Form, FormGroup, Label, Input } from 'reactstrap'
+import { ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID } from './Constants';
+import TxStatus from './TxStatus'
+import LockTxStatus from './LockTxStatus'
+import BurnTxStatus from './BurnTxStatus'
 
 export default class ConversionForm extends Component {
   constructor(props) {
@@ -16,28 +16,43 @@ export default class ConversionForm extends Component {
       return (
       <div>
         <h1 className="conversionFormTitle">Ropsten to Kovan</h1>
-        <hr />
-        <TokenForm
-        web3={this.props.web3}
-        srcChain='ropsten'
-        destChain='kovan'
-        submitButtonText='Convert Back To Kovan'
-        isLock  = {false}
-        />
+        <hr className="divider"/>
+        <Row>
+          <Col xs="3">
+            <TxStatus />
+          </Col>
+
+          <Col xs="9">
+            <TokenForm
+            srcChain='ropsten'
+            destChain='kovan'
+            submitButtonText='Convert Back To Kovan'
+            isLock  = {false}
+            />
+          </Col>
+        </Row>
       </div>
       );
+
     } else if (currNetwork == KOVAN_NETWORK_ID) {
       return (
       <div>
         <h1 className="conversionFormTitle">Kovan to Ropsten</h1>
         <hr className="divider"/>
-        <TokenForm 
-        web3={this.props.web3}
-        srcChain='kovan'
-        destChain='ropsten'
-        submitButtonText='Convert To Ropsten'
-        isLock={true}
-        />
+        <Row>
+          <Col xs="3">
+            <TxStatus />
+          </Col>
+
+          <Col xs="9">
+            <TokenForm 
+            srcChain='kovan'
+            destChain='ropsten'
+            submitButtonText='Convert To Ropsten'
+            isLock={true}
+            />
+          </Col>
+        </Row>
       </div>
       );
     } else {
@@ -54,7 +69,6 @@ class TokenForm extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      web3: this.props.web3,
       ethAmt: 0,
       recipient: '',
     }
@@ -96,18 +110,6 @@ class TokenForm extends Component {
           submitButtonText={this.props.submitButtonText}
           parent={this}
           />
-
-          {/*}
-          <LockTxStatus
-          ref={instance => {this.child = instance; }} 
-          recipient = {this.state.recipient}
-          ethAmt = {this.state.ethAmt}
-          srcChain = {this.props.srcChain}
-          destChain = {this.props.destChain}
-          />
-          <Button color='success' onClick={() => this.child.submitLockTx()}>{this.props.submitButtonText}</Button>
-          */}
-
         </Form>
       </div>
     );
@@ -120,13 +122,12 @@ function LockOrBurn(props) {
     return (
     <div>
     <LockTxStatus
-    ref={instance => {props.parent.child = instance; }} 
     recipient = {props.recipient}
     ethAmt = {props.ethAmt}
     srcChain = {props.srcChain}
     destChain = {props.destChain}
+    submitButtonText = {props.submitButtonText}
     />
-    <Button color='success' onClick={() => props.parent.child.submitLockTx() }>{props.submitButtonText}</Button>
     </div>
     )
   } else {

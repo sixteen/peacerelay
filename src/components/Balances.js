@@ -17,12 +17,13 @@ export default class Balances extends Component {
 	}
 
 	queryBalance(queryNetwork) {
-		console.log(queryNetwork)
 		if (!this.props.web3) {
+			console.log('Web3 failed to pass down to component, or is not initialised.')
 			return;
 		}
 
 		if (queryNetwork == 'kovan') {
+			console.log('balanceOf() method has not been implemented in Smart Contract.')
 			//ETCLocking has no method balanceOf. Consider storing balances to see how much ETH each person has locked up
 			/*
 			let data = ETCLocking.balanceOf.getData(this.state.kovanAddress);
@@ -35,7 +36,6 @@ export default class Balances extends Component {
 		} else {
 			let balance = ETCToken.balanceOf(this.state.ropstenAddress)
 			balance = this.props.web3.fromWei(balance, 'ether').toNumber()
-			console.log(balance)
 			if (balance != this.state.ropstenBalance) {
 				this.setState({ropstenBalance: balance})
 			}

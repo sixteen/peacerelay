@@ -1,115 +1,107 @@
 import React, { Component } from 'react'
-import { Button, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap'
+import { connect } from 'react-redux'
+import { Button } from 'reactstrap'
 import MDSpinner from 'react-md-spinner'
-import { MAX_ATTEMPTS, ROPSTEN_ETHERSCAN_LINK } from './Constants.js'
-import { verify } from 'secp256k1/lib/elliptic'
-import Parser from 'html-react-parser'
+import { newTxStatus, updateTxStatus, removeTxStatus } from '../actions/txStatusActions'
+import { MAX_ATTEMPTS, ROPSTEN_ETHERSCAN_LINK, InfuraRopsten, InfuraKovan, 
+  EpRopsten, EpKovan, ETCToken, PeaceRelayRopsten, ETC_LOCKING_ADDRESS, PEACE_RELAY_ADDRESS_ROPSTEN } from './Constants.js'
 
-var EP = require('eth-proof');
-var Web3 = require('web3');
 var helper  = require('../../utils/helpers.js');
 var BN = require('bn.js');
-var settings = require('../../cli/settings.json');
 var signing = require('../utils/signing.js');
-const PeacerelayABI = require('../../build/contracts/PeaceRelay.json').abi;
-const ETCTokenABI = require('../../build/contracts/ETCToken.json').abi;
-const ETCLockingABI = require('../../build/contracts/ETCLocking.json').abi;
-
-var web3 = window.web3
-const Ropsten = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
-const Kovan = new Web3(new Web3.providers.HttpProvider("https://kovan.infura.io"));
-
-var PeaceRelayRopstenContract = Ropsten.eth.contract(PeacerelayABI);
-var PeaceRelayKovanContract = Kovan.eth.contract(PeacerelayABI);
-var ETCTokenContract = Ropsten.eth.contract(ETCTokenABI);
-var ETCLockingContract = Kovan.eth.contract(ETCLockingABI);
- 
-var PeaceRelayRopsten = PeaceRelayRopstenContract.at(settings['ropsten'].peaceRelayAddress);
-var PeaceRelayKovan = PeaceRelayKovanContract.at(settings['kovan'].peaceRelayAddress);
-var ETCToken = ETCTokenContract.at(settings['ropsten'].etcTokenAddress);
-var ETCLocking = ETCLockingContract.at(settings['kovan'].etcLockingAddress);
-var ETCTokenMintEvent = ETCToken.Mint()
-
-const EpRopsten = new EP(new Web3.providers.HttpProvider("https://ropsten.infura.io"));
-const EpKovan = new EP(new Web3.providers.HttpProvider("https://kovan.infura.io"));
-
 var EPs = {'kovan': EpKovan, 'ropsten': EpRopsten};
-var chainMapping = {'1': 'mainnet', '3': 'ropsten', '42': 'kovan'};
-var relays = {'kovan': PeaceRelayKovan, 'ropsten': PeaceRelayRopsten};
-var helpers = {'kovan': ETCLocking, 'ropsten': ETCToken};
-var chains = {'kovan': Kovan, 'ropsten': Ropsten};
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const mapStateToProps = (state) => ({
+  web3: state.web3Status.web3,
+  currAccount: state.web3Status.currAccount,
+  ETCLocking: state.contracts.ETCLocking,
+  PeaceRelayKovan: state.contracts.PeaceRelayKovan,
+  })
 
 class LockTxStatus extends Component {
   constructor(props) {
     super(props);
-    
+
     this.state = {
-      txStatus: '',
-      modal: true,
+      ETCToken: ETCToken,
+      relays: {'kovan': this.props.PeaceRelayKovan, 'ropsten': PeaceRelayRopsten}
     }
 
-    this.toggle = this.toggle.bind(this);
-    this.updateTxStatus = this.updateTxStatus.bind(this);
+    this.createNewTxStatus = this.createNewTxStatus.bind(this)
+    this.updateTxStatus = this.updateTxStatus.bind(this)
+    this.removeTxStatus = this.removeTxStatus.bind(this)
+    this.submitLockTx = this.submitLockTx.bind(this)
+  }
+  
+  createNewTxStatus(id,msg) {
+    this.props.dispatch(newTxStatus(id,msg))
   }
 
-  toggle() {
-    this.setState({
-      modal: !this.state.modal
-    })
+  updateTxStatus(id,msg) {
+    this.props.dispatch(updateTxStatus(id,msg))
   }
 
-  updateTxStatus(_message) {
-    this.setState({txStatus: _message})
+  removeTxStatus(id) {
+    this.props.dispatch(removeTxStatus(id))
   }
 
   submitLockTx() {
+    let id = new Date().getTime()
+    /*
+    To use this code when Infura allows event listening
+    ETCTokenMintEvent = this.state.ETCToken.Mint({to: this.props.recipient})
     ETCTokenMintEvent.watch(function(err,res){
       if(!err) {
+        console.log(res)
         console.log("Tokens mined! =)")
       }
       else {
         console.log("Something went wrong!")
       }
     })
+    */
 
-    this.updateTxStatus("About to convert " + this.props.ethAmt + " ETH from " + this.props.srcChain + " to " + this.props.destChain)
-    this.lock(async function(self,lockTxHash) {
+    this.createNewTxStatus(id,"About to convert " + this.props.ethAmt + " ETH from " + this.props.srcChain + " to " + this.props.destChain)
+    this.lock(id, async function(self,lockTxHash,id) {
       var attempts = 0;
       var receipt = self.getTransactionReceipt(attempts,lockTxHash);
-      self.updateTxStatus("Checking vaildity of transaction...")
+      self.updateTxStatus(id,"Checking vaildity of transaction...")
       if(self.isValidReceipt(receipt.status)) {
-        console.log(receipt)
+        self.updateTxStatus(id, "Waiting for block to be relayed to Ropsten")
         let proof = await self.getProofFromTxHash(lockTxHash,self.props.srcChain);
         let blockHash = proof.blockHash;
         blockHash = self.convertBlockHashToBigNumFormat(blockHash);
+        console.log("blockHash:" + blockHash)
         
-        /* 
-        SubmitBlock event has been disabled in Infura for now, so need to do long polling
-  
-        var relayEvent = relays[destChain].SubmitBlock({blockHash: blockHash});
-        relayEvent.watch(function(err, result) {
+        /*
+        To use this code when Infura implements event listening
+        //var RelayEvent = self.state.relays[self.props.destChain].SubmitBlock({blockHash: blockHash}) <-- To use when PeaceRelay indexes event argument
+        let RelayEvent = self.state.relays[self.props.destChain].SubmitBlock()
+        RelayEvent.watch(function(err, result) {
           if(!err) {
-            mint(proof, destChain);
+            console.log(result)
+            if(result.args.blockHash == blockHash) {
+              self.mint(self, proof, self.props.destChain)
+            }
           } else {
-            console.log(err);
+            console.log(err)
           }
-        });
+        })
         */
-
-        attempts = 0;
-        self.updateTxStatus("Waiting for block from "+ self.props.srcChain + " to be relayed to " + self.props.destChain)
-        if (await self.verifyRelayData(attempts,self.props.destChain,blockHash)) {
-          await self.mint(proof,blockHash,self.props.destChain);
-        } 
+       attempts = 0;
+       self.updateTxStatus(id,"Waiting for block from "+ self.props.srcChain + " to be relayed to " + self.props.destChain)
+       if (await self.verifyRelayData(attempts,self.props.destChain,blockHash)) {
+         await self.mint(id,proof,blockHash,self.props.destChain);
+       } 
       } else {
-        self.updateTxStatus("Lock trx failed")
+        self.updateTxStatus(id,"Lock trx failed")
       }
-    });
+    })
   }
 
-  async lock(callback) {
+  async lock(id, callback) {
     var txHash, data;
     let chain = this.props.srcChain,
     recipient = this.props.recipient,
@@ -117,29 +109,27 @@ class LockTxStatus extends Component {
     self = this
 
     if(chain == 'kovan') {
-      data = ETCLocking.lock.getData(recipient);
-      await web3.eth.sendTransaction({
+      data = this.props.ETCLocking.lock.getData(recipient);
+      await this.props.web3.eth.sendTransaction({
         data: data, 
-        from: web3.eth.defaultAccount, 
-        to: settings['kovan'].etcLockingAddress, 
-        value: web3.toWei(amount),
+        from: this.props.currAccount, 
+        to: ETC_LOCKING_ADDRESS,
+        value: this.props.web3.toWei(amount),
         gas: 100000}, 
         
         async function(err, res) {
           if(!err) {
-            self.updateTxStatus("Waiting for transaction to be mined....")
+            self.updateTxStatus(id,"Waiting for transaction to be mined....")
             //Need to add delay, otherwise status won't be updated
             await delay(100);
-            callback(self,res);
+            callback(self,res,id)
           } else {
-            self.updateTxStatus("Transaction was rejected.")
-            await delay(1000);
-            self.updateTxStatus("");
+            self.removeTxStatus(id)
           }
         });
 
     } else {
-      self.updateTxStatus("This function has not been implemented in the " + this.props.srcChain + "network yet. \
+      console.log("This function has not been implemented in the " + this.props.srcChain + "network yet. \
       Kindly use the " + this.props.destChain + "network.")
     }
   }
@@ -150,11 +140,12 @@ class LockTxStatus extends Component {
       return null
     }
   
-    let receipt = Kovan.eth.getTransactionReceipt(lockTxHash);
+    let receipt = InfuraKovan.eth.getTransactionReceipt(lockTxHash);
     if (!receipt) {
       //receipt is null, try again
       return this.getTransactionReceipt(attempts+1,lockTxHash);
     } else {
+      console.log("blockNumber:" + receipt.blockNumber)
       return receipt;
     }
   }
@@ -171,11 +162,10 @@ class LockTxStatus extends Component {
   
   convertBlockHashToBigNumFormat(blockHash) {
     blockHash = new BN(blockHash).toString();
-    console.log("Block hash in Big Number:" + blockHash);
     return blockHash;
   }
   
-  async mint(txProof, blockHash, destChain) {
+  async mint(id, txProof, blockHash, destChain) {
     var data, res;
     if(destChain == 'ropsten') {
       console.log('Value:' + txProof.value)
@@ -183,16 +173,15 @@ class LockTxStatus extends Component {
       console.log('Path:' + txProof.path)
       console.log('Nodes:' + txProof.parentNodes)
       
-      data = ETCToken.mint.getData(txProof.value, blockHash, 
-                                    txProof.path, txProof.parentNodes);
-      this.updateTxStatus('Minting....');
-      var mintHash = await signing.mint(data);
-      this.updateTxStatus("Tokens have been minted and will be credited after <a href='" + ROPSTEN_ETHERSCAN_LINK + mintHash + "' target='_blank'>this transaction</a> has been mined.");      
+      data = this.state.ETCToken.mint.getData(txProof.value, blockHash, 
+                                    txProof.path, txProof.parentNodes)
+      var mintHash = await signing.mint(data)
+      this.updateTxStatus(id,"Tokens have been minted and will be credited after <a href='" + ROPSTEN_ETHERSCAN_LINK + mintHash + "' target='_blank'>this transaction</a> has been mined.")
     } else {
-      this.updateTxStatus("Wrong destination network.")
+      console.log("Wrong destination network.")
     }
   }
-  
+
   async verifyRelayData(attempts,destChain,blockHash) {
     if (attempts >= MAX_ATTEMPTS) {
       return false
@@ -208,41 +197,20 @@ class LockTxStatus extends Component {
   }
   
   dataHasRelayed(destChain, blockHash) {
-  
-    var data = relays[destChain].blocks.getData(blockHash);
-    var res = Ropsten.eth.call({
+    var data = this.state.relays[destChain].blocks.getData(blockHash);
+    var res = InfuraRopsten.eth.call({
       data: data, 
-      from: web3.eth.defaultAccount, 
-      to: settings['ropsten'].peaceRelayAddress
+      from: this.props.currAccount, 
+      to: PEACE_RELAY_ADDRESS_ROPSTEN
     });
     return (res > 0);
   }
 
   render() {
-    if (!this.state.txStatus) {
-      return null
-    } else {
-      return (
-        <div>
-          <Button outline color="warning" onClick={this.toggle} className="pendingTxButton">View Pending Transaction</Button>
-            <Modal isOpen={this.state.modal} toggle={this.toggle}>
-              <ModalHeader toggle={this.toggle}>Transaction</ModalHeader>
-              
-              <ModalBody className="txStatusModalCenter">
-                {Parser(this.state.txStatus)}
-                <div>
-                  <MDSpinner size={50} />
-                </div>
-              </ModalBody>
-              
-              <ModalFooter>
-                <Button outline color="danger" onClick={this.toggle}>Close</Button>
-              </ModalFooter>
-            </Modal>
-        </div>
-      )
-    }
+    return (
+    <Button color="success" onClick={this.submitLockTx}>{this.props.submitButtonText}</Button>
+    )
   }
 }
 
-export default LockTxStatus
+export default connect(mapStateToProps)(LockTxStatus)
