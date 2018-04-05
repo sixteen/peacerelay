@@ -37,9 +37,9 @@ contract ETCToken is ERC20, SafeMath, Ownable {
   uint public DEPOSIT_GAS_MINIMUM = 500000; //should be constant
   bytes4 public LOCK_FUNCTION_SIG = 0xf435f5a7;
 
-  mapping(address => uint) public balances;
-  mapping(address => mapping (address => uint)) public allowed;
-  mapping(bytes32 => bool) public rewarded;
+  mapping(address => uint) balances;
+  mapping(address => mapping (address => uint)) allowed;
+  mapping(bytes32 => bool) rewarded;
 
   PeaceRelay public ETCRelay;
   address public etcLockingAddr; //maybe rename to EthLockingContract
@@ -56,15 +56,15 @@ contract ETCToken is ERC20, SafeMath, Ownable {
   }
 
 
-  function changePeaceRelayAddr(address _peaceRelayAddr) onlyOwner {
+  function changePeaceRelayAddr(address _peaceRelayAddr) onlyOwner public {
     ETCRelay = PeaceRelay(_peaceRelayAddr);
   }
 
-  function changeETCLockingAddr(address _etcLockingAddr) onlyOwner {
+  function changeETCLockingAddr(address _etcLockingAddr) onlyOwner public {
   	etcLockingAddr = _etcLockingAddr;
   }
 
-  function mint(bytes value, uint256 blockHash, bytes path, bytes parentNodes) returns (bool) {
+  function mint(bytes value, uint256 blockHash, bytes path, bytes parentNodes) public returns (bool) {
     if (!rewarded[keccak256(value, bytes32(blockHash), path, parentNodes)] && ETCRelay.checkTxProof(value, blockHash, path, parentNodes)) {
       Transaction memory tx = getTransactionDetails(value);
       bytes4 functionSig = getSignature(tx.data);
@@ -77,75 +77,59 @@ contract ETCToken is ERC20, SafeMath, Ownable {
 
       totalSupply = safeAdd(totalSupply, tx.value);
       balances[newAddress] = safeAdd(balances[newAddress], tx.value);
-      Mint(newAddress, tx.value);
+      emit Mint(newAddress, tx.value);
       rewarded[keccak256(value, bytes32(blockHash), path, parentNodes)] = true;
       return true;
     }
     return false;
   }
 
-  function burn(uint256 _value, address _etcAddr) returns (bool) {
+  function burn(uint256 _value, address etcAddr) public returns (bool) {
     // safeSub already has throw, so no need to throw
     balances[msg.sender] = safeSub(balances[msg.sender], _value);
     totalSupply = safeSub(totalSupply, _value);
-    Burn(msg.sender, _etcAddr, _value);
+    emit Burn(msg.sender, etcAddr, _value);
     return true;
   }
   
-  function checkIfRewarded(bytes value, uint256 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
+  function checkIfRewarded(bytes value, uint256 blockHash, bytes path, bytes parentNodes) public constant returns (bool) {
     return rewarded[keccak256(value, bytes32(blockHash),path,parentNodes)];
   }
   
-  function checkProof(bytes value, uint256 blockHash, bytes path, bytes parentNodes) constant returns (bool) {
+    function checkProof(bytes value, uint256 blockHash, bytes path, bytes parentNodes) public constant returns (bool) {
     return ETCRelay.checkTxProof(value, blockHash, path, parentNodes);
   }
-
-  function checkFnSig(bytes value) returns (bool) {
-    Transaction memory tx = getTransactionDetails(value);
-    bytes4 functionSig = getSignature(tx.data);
-    return (functionSig == LOCK_FUNCTION_SIG);
-  }
-
-  function checkLockingAddr(bytes value) returns (bool) {
-    Transaction memory tx = getTransactionDetails(value);
-    return (tx.to == etcLockingAddr);
-  }
   
-  function checkGasLimit(bytes value) returns (bool) {
-    Transaction memory tx = getTransactionDetails(value);
-    return (tx.gasLimit <= DEPOSIT_GAS_MINIMUM);
-  }
-  
-  function transfer(address _to, uint _value) returns (bool) {
+  function transfer(address _to, uint _value) public returns (bool) {
     // safeSub already has throw, so no need to throw
     balances[msg.sender] = safeSub(balances[msg.sender], _value);
     balances[_to] = safeAdd(balances[_to], _value);
-    Transfer(msg.sender, _to, _value);
+    emit Transfer(msg.sender, _to, _value);
     return true;
   }
 
-  function transferFrom(address _from, address _to, uint _value) returns (bool) {
-    var _allowance = allowed[_from][msg.sender];
+  function transferFrom(address _from, address _to, uint _value) public returns (bool) {
+    uint256 allowance = allowed[_from][msg.sender];
     
     balances[_from] = safeSub(balances[_from], _value);
-    allowed[_from][msg.sender] = safeSub(_allowance, _value);
+    allowed[_from][msg.sender] = safeSub(allowance, _value);
     balances[_to] = safeAdd(balances[_to], _value);
-    Transfer(_from, _to, _value);
+    emit Transfer(_from, _to, _value);
     return true;
   }
 
-  function balanceOf(address _owner) constant returns (uint) {
+  function balanceOf(address _owner) public constant returns (uint) {
     return balances[_owner];
   }
 
-  function approve(address _spender, uint _value) returns (bool) {
+  function approve(address _spender, uint _value) public returns (bool) {
     allowed[msg.sender][_spender] = _value;
-    Approval(msg.sender, _spender, _value);
+    emit Approval(msg.sender, _spender, _value);
     return true;
   }
 
 
-  function allowance(address _owner, address _spender) constant returns (uint) {
+  function allowance(address _owner, address _spender) public constant returns (uint) {
     return allowed[_owner][_spender];
   }
 
@@ -154,7 +138,7 @@ contract ETCToken is ERC20, SafeMath, Ownable {
 
 
   // HELPER FUNCTIONS
-  function getSignature(bytes b) constant returns (bytes4) {
+  function getSignature(bytes b) public pure returns (bytes4) {
     require(b.length >= 32);
     uint tmp = 0;
     for (uint i = 0; i < 4; i++) {
@@ -165,7 +149,7 @@ contract ETCToken is ERC20, SafeMath, Ownable {
 
   //grabs the first input from some function data
   //and implies that it is an address
-  function getAddress(bytes b) constant returns (address a) {
+  function getAddress(bytes b) public pure returns (address a) {
     if (b.length < 36) return address(0);
     assembly {
       let mask := 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
