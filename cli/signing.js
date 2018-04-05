@@ -13,7 +13,7 @@ async function submitBlock(data, chain) {
         value: 0,
         data: data,
         gasLimit: "0x493e0",
-        gasPrice: "0xB2D05E00",
+        gasPrice: "0x59682F00",
         nonce: nonce,
         chainId: chain.id
       }, 
