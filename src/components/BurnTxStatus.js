@@ -1,49 +1,62 @@
 import React, { Component } from 'react'
-import { Button, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap'
-import MDSpinner from 'react-md-spinner'
-import { MAX_ATTEMPTS, KOVAN_ETHERSCAN_LINK, InfuraKovan, InfuraRopsten, 
-  ETCToken, ETCLocking, ETC_TOKEN_ADDRESS, EPs, RELAYS, PEACE_RELAY_ADDRESS_KOVAN} from './Constants.js'
-import { verify } from 'secp256k1/lib/elliptic'
-import Parser from 'html-react-parser'
+import { connect } from 'react-redux'
+import { Button } from 'reactstrap'
+import { newTxStatus, updateTxStatus, removeTxStatus } from '../actions/txStatusActions'
+import { MAX_ATTEMPTS, KOVAN_ETHERSCAN_LINK, InfuraRinkeby, InfuraKovan,  
+  ETCLocking, ETC_TOKEN_ADDRESS, EPs, PeaceRelayKovan, PEACE_RELAY_ADDRESS_KOVAN} from './Constants.js'
 
 var helper  = require('../../utils/helpers.js');
 var BN = require('bn.js');
-
 var signing = require('../utils/signing.js');
-var web3 = window.web3
+
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+const mapStateToProps = (state) => ({
+  web3: state.web3Status.web3,
+  currAccount: state.web3Status.currAccount,
+  ETCToken: state.contracts.ETCToken,
+  PeaceRelayRinkeby: state.contracts.PeaceRelayRinkeby,
+  })
+  
 class BurnTxStatus extends Component {
   constructor(props) {
     super(props);
     
     this.state = {
-      txStatus: '',
-      modal: true,
+      relays: {'kovan': PeaceRelayKovan, 'rinkeby': this.props.PeaceRelayRinkeby}
     }
 
-    this.toggle = this.toggle.bind(this);
+    this.createNewTxStatus = this.createNewTxStatus.bind(this)
     this.updateTxStatus = this.updateTxStatus.bind(this);
+    this.removeTxStatus = this.removeTxStatus.bind(this)
+    this.submitBurnTx = this.submitBurnTx.bind(this)
+    this.unlock = this.unlock.bind(this)
   }
 
-  toggle() {
-    this.setState({
-      modal: !this.state.modal
-    })
+  createNewTxStatus(id,msg) {
+    this.props.dispatch(newTxStatus(id,msg))
   }
 
-  updateTxStatus(_message) {
-    this.setState({txStatus: _message})
+  updateTxStatus(id,msg) {
+    this.props.dispatch(updateTxStatus(id,msg))
+  }
+
+  removeTxStatus(id) {
+    this.props.dispatch(removeTxStatus(id))
   }
 
   submitBurnTx() {
-
-    this.updateTxStatus("About to burn " + this.props.ethAmt + " ETH from " + this.props.srcChain + " to " + this.props.destChain)
-    this.burn(async function(self,burnTxHash) {
+    let id = new Date().getTime()
+    this.createNewTxStatus(id,"About to burn " + this.props.ethAmt + " ETH from " + this.props.srcChain + " to " + this.props.destChain)
+    this.burn(id,async function(self,burnTxHash,id) {
       var attempts = 0;
       var receipt = self.getTransactionReceipt(attempts,burnTxHash);
-
-      self.updateTxStatus("Checking vaildity of transaction...")
+      if (!receipt) {
+        self.updateTxStatus(id,'Unable to get Transaction Receipt!')
+        return
+      }
+      
+      self.updateTxStatus(id,"Checking vaildity of transaction...")
       if(self.isValidReceipt(receipt.status)) {
         let [txProof,receiptProof] = await self.getProofsFromTxHash(burnTxHash,self.props.srcChain);
         console.log('TxValue:' + txProof.value)
@@ -70,61 +83,59 @@ class BurnTxStatus extends Component {
         */
 
         attempts = 0;
-        self.updateTxStatus("Waiting for block from "+ self.props.srcChain + " to be relayed to " + self.props.destChain)
+        self.updateTxStatus(id,"Waiting for block from "+ self.props.srcChain + " to be relayed to " + self.props.destChain)
         if (await self.verifyRelayData(attempts,self.props.destChain,blockHash)) {
-          await self.unlock(txProof,receiptProof,blockHash,self.props.destChain);
+          await self.unlock(id, txProof, receiptProof, blockHash, self.props.destChain);
         } 
       } else {
-        self.updateTxStatus("Burn trx failed")
+        self.updateTxStatus(id,"Burn trx failed")
       }
     });
   }
 
-  async burn(callback) {
+  async burn(id,callback) {
     var txHash, data;
     let chain = this.props.srcChain,
     recipient = this.props.recipient,
     amount = this.props.ethAmt,
     self = this
 
-    if(chain == 'ropsten') {
-      data = ETCToken.burn.getData(web3.toWei(amount),recipient);
-      await web3.eth.sendTransaction({
+    if(chain == 'rinkeby') {
+      data = this.props.ETCToken.burn.getData(this.props.web3.toWei(amount),recipient);
+      await this.props.web3.eth.sendTransaction({
         data: data, 
-        from: web3.eth.defaultAccount, 
+        from: this.props.currAccount,
         to: ETC_TOKEN_ADDRESS, 
         gas: 100000}, 
         
         async function(err, res) {
           if(!err) {
-            self.updateTxStatus("Waiting for transaction to be mined....")
+            self.updateTxStatus(id,"Waiting for transaction to be mined....")
             //Need to add delay, otherwise status won't be updated
-            await delay(1000);
-            callback(self,res);
+            await delay(100);
+            callback(self,res,id);
           } else {
-            self.updateTxStatus("Transaction was rejected.")
-            await delay(1000);
-            self.updateTxStatus("");
+            self.removeTxStatus(id)
           }
-        });
+        })
 
     } else {
-        self.updateTxStatus("This function has not been implemented in the " + this.props.srcChain + "network yet. \
+        self.updateTxStatus(id,"This function has not been implemented in the " + this.props.srcChain + "network yet. \
         Kindly use the " + this.props.destChain + "network.")
     }
   }
 
   getTransactionReceipt(attempts,lockTxHash) {
     if (attempts >= MAX_ATTEMPTS) {
-      this.updateTxStatus('Unable to get Transaction Receipt!')
       return null
     }
   
-    let receipt = InfuraRopsten.eth.getTransactionReceipt(lockTxHash);
+    let receipt = InfuraRinkeby.eth.getTransactionReceipt(lockTxHash);
     if (!receipt) {
       //receipt is null, try again
       return this.getTransactionReceipt(attempts+1,lockTxHash);
     } else {
+      console.log("blockNumber:" + receipt.blockNumber)
       return receipt;
     }
   }
@@ -134,30 +145,29 @@ class BurnTxStatus extends Component {
   }
 
   async getProofsFromTxHash(lockTxHash,srcChain) {
-    let txProof = await EPs[srcChain].getTransactionProof(lockTxHash);
-    txProof = helper.web3ify(txProof);
-    let receiptProof = await EPs[srcChain].getReceiptProof(lockTxHash);
-    receiptProof = helper.web3ify(receiptProof);
-    return [txProof,receiptProof];
+    let txProof = await EPs[srcChain].getTransactionProof(lockTxHash)
+    txProof = helper.web3ify(txProof)
+    let receiptProof = await EPs[srcChain].getReceiptProof(lockTxHash)
+    receiptProof = helper.web3ify(receiptProof)
+    return [txProof,receiptProof]
   }
   
   convertBlockHashToBigNumFormat(blockHash) {  
-    blockHash = new BN(blockHash).toString();
-    console.log("Block hash in Big Number:" + blockHash);
-    return blockHash;
+    blockHash = new BN(blockHash).toString()
+    console.log("Block hash in Big Number:" + blockHash)
+    return blockHash
   }
   
-  async unlock(txProof, receiptProof, blockHash, destChain) {
-    var data, res;
+  async unlock(id, txProof, receiptProof, blockHash, destChain) {
+    var data, res
     if(destChain == 'kovan') {
       data = ETCLocking.unlock.getData(txProof.value, blockHash, txProof.path, txProof.parentNodes,
       receiptProof.value, receiptProof.path, receiptProof.parentNodes)
-
-      let unlockHash = await signing.unlock(data);
-      this.updateTxStatus("Waiting for <a href='" + KOVAN_ETHERSCAN_LINK + unlockHash + "' target='_blank'>this transaction</a> to be mined."); 
+      var unlockHash = await signing.unlock(data)
+      this.updateTxStatus(id,"Waiting for <a href='" + KOVAN_ETHERSCAN_LINK + unlockHash + "' target='_blank'>this transaction</a> to be mined."); 
       
     } else {
-        this.updateTxStatus("Wrong destination network.")
+        this.updateTxStatus(id,"Wrong destination network.")
     }
   }
   
@@ -177,40 +187,20 @@ class BurnTxStatus extends Component {
   
   dataHasRelayed(destChain, blockHash) {
   
-    var data = RELAYS[destChain].blocks.getData(blockHash);
+    var data = this.state.relays[destChain].blocks.getData(blockHash);
     var res = InfuraKovan.eth.call({
       data: data, 
-      from: web3.eth.defaultAccount, 
+      from: this.props.currAccount,
       to: PEACE_RELAY_ADDRESS_KOVAN
     });
     return (res > 0);
   }
 
   render() {
-    if (!this.state.txStatus) {
-      return null
-    } else {
-      return (
-        <div>
-          <Button outline color="warning" onClick={this.toggle} className="pendingTxButton">View Pending Transaction</Button>
-            <Modal isOpen={this.state.modal} toggle={this.toggle}>
-              <ModalHeader toggle={this.toggle}>Transaction</ModalHeader>
-              
-              <ModalBody className="txStatusModalCenter">
-                {Parser(this.state.txStatus)}
-                <div>
-                  <MDSpinner size={50} />
-                </div>
-              </ModalBody>
-              
-              <ModalFooter>
-                <Button outline color="danger" onClick={this.toggle}>Close</Button>
-              </ModalFooter>
-            </Modal>
-        </div>
-      )
-    }
+    return (
+    <Button color="success" onClick={this.submitBurnTx}>{this.props.submitButtonText}</Button>
+    )
   }
 }
 
-export default BurnTxStatus
+export default connect(mapStateToProps)(BurnTxStatus)

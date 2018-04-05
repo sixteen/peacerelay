@@ -1,6 +1,6 @@
 import React from 'react';
 import { Collapse, Navbar, NavbarToggler, NavbarBrand, Nav, NavItem, Button } from 'reactstrap';
-import { RIGHT_NETWORK_IDS, METAMASK_NOT_FOUND, MAIN_NETWORK_ID, ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID } from './Constants'
+import { RIGHT_NETWORK_IDS, METAMASK_NOT_FOUND, MAIN_NETWORK_ID, RINKEBY_NETWORK_ID, KOVAN_NETWORK_ID } from './Constants'
 import Banner from '../assets/Banner.png'
 
 export default class NavigationBar extends React.Component {
@@ -49,8 +49,8 @@ export default class NavigationBar extends React.Component {
       case MAIN_NETWORK_ID:
       return <Button color="danger" disabled>Mainnet</Button>
 
-      case ROPSTEN_NETWORK_ID:
-      return <Button id="ropstenNetworkButton" disabled>Ropsten Network</Button>
+      case RINKEBY_NETWORK_ID:
+      return <Button id="rinkebyNetworkButton" disabled>Rinkeby Network</Button>
 
       case KOVAN_NETWORK_ID:
       return <Button id="kovanNetworkButton" disabled>Kovan Network</Button>
@@ -68,7 +68,7 @@ export default class NavigationBar extends React.Component {
       <Navbar className="wrongNetworkBar">
         <Nav navbar>
         <NavItem>
-          Wrong Network Detected. Kindly switch to Ropsten or Kovan.
+          Wrong Network Detected. Kindly switch to Rinkeby or Kovan.
         </NavItem>
         </Nav>
       </Navbar>

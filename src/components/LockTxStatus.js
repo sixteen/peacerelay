@@ -1,15 +1,13 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { Button } from 'reactstrap'
-import MDSpinner from 'react-md-spinner'
 import { newTxStatus, updateTxStatus, removeTxStatus } from '../actions/txStatusActions'
-import { MAX_ATTEMPTS, ROPSTEN_ETHERSCAN_LINK, InfuraRopsten, InfuraKovan, 
-  EpRopsten, EpKovan, ETCToken, PeaceRelayRopsten, ETC_LOCKING_ADDRESS, PEACE_RELAY_ADDRESS_ROPSTEN } from './Constants.js'
+import { MAX_ATTEMPTS, RINKEBY_ETHERSCAN_LINK, InfuraRinkeby, InfuraKovan, ETCToken,
+  EpRinkeby, EPs, PeaceRelayRinkeby, ETC_LOCKING_ADDRESS, PEACE_RELAY_ADDRESS_RINKEBY } from './Constants.js'
 
 var helper  = require('../../utils/helpers.js');
 var BN = require('bn.js');
 var signing = require('../utils/signing.js');
-var EPs = {'kovan': EpKovan, 'ropsten': EpRopsten};
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -25,8 +23,7 @@ class LockTxStatus extends Component {
     super(props);
 
     this.state = {
-      ETCToken: ETCToken,
-      relays: {'kovan': this.props.PeaceRelayKovan, 'ropsten': PeaceRelayRopsten}
+      relays: {'kovan': this.props.PeaceRelayKovan, 'rinkeby': PeaceRelayRinkeby}
     }
 
     this.createNewTxStatus = this.createNewTxStatus.bind(this)
@@ -51,7 +48,7 @@ class LockTxStatus extends Component {
     let id = new Date().getTime()
     /*
     To use this code when Infura allows event listening
-    ETCTokenMintEvent = this.state.ETCToken.Mint({to: this.props.recipient})
+    ETCTokenMintEvent = ETCToken.Mint({to: this.props.recipient})
     ETCTokenMintEvent.watch(function(err,res){
       if(!err) {
         console.log(res)
@@ -66,10 +63,10 @@ class LockTxStatus extends Component {
     this.createNewTxStatus(id,"About to convert " + this.props.ethAmt + " ETH from " + this.props.srcChain + " to " + this.props.destChain)
     this.lock(id, async function(self,lockTxHash,id) {
       var attempts = 0;
-      var receipt = self.getTransactionReceipt(attempts,lockTxHash);
+      var receipt = self.getTransactionReceipt(id,attempts,lockTxHash);
       self.updateTxStatus(id,"Checking vaildity of transaction...")
       if(self.isValidReceipt(receipt.status)) {
-        self.updateTxStatus(id, "Waiting for block to be relayed to Ropsten")
+        self.updateTxStatus(id, "Waiting for block to be relayed to Rinkeby")
         let proof = await self.getProofFromTxHash(lockTxHash,self.props.srcChain);
         let blockHash = proof.blockHash;
         blockHash = self.convertBlockHashToBigNumFormat(blockHash);
@@ -129,21 +126,21 @@ class LockTxStatus extends Component {
         });
 
     } else {
-      console.log("This function has not been implemented in the " + this.props.srcChain + "network yet. \
+      self.updateTxStatus(id,"This function has not been implemented in the " + this.props.srcChain + "network yet. \
       Kindly use the " + this.props.destChain + "network.")
     }
   }
 
-  getTransactionReceipt(attempts,lockTxHash) {
+  getTransactionReceipt(id,attempts,lockTxHash) {
     if (attempts >= MAX_ATTEMPTS) {
-      this.updateTxStatus('Unable to get Transaction Receipt!')
+      this.updateTxStatus(id,'Unable to get Transaction Receipt!')
       return null
     }
   
     let receipt = InfuraKovan.eth.getTransactionReceipt(lockTxHash);
     if (!receipt) {
       //receipt is null, try again
-      return this.getTransactionReceipt(attempts+1,lockTxHash);
+      return this.getTransactionReceipt(id,attempts+1,lockTxHash);
     } else {
       console.log("blockNumber:" + receipt.blockNumber)
       return receipt;
@@ -167,18 +164,18 @@ class LockTxStatus extends Component {
   
   async mint(id, txProof, blockHash, destChain) {
     var data, res;
-    if(destChain == 'ropsten') {
+    if(destChain == 'rinkeby') {
       console.log('Value:' + txProof.value)
       console.log('Blockhash:' + blockHash)
       console.log('Path:' + txProof.path)
       console.log('Nodes:' + txProof.parentNodes)
       
-      data = this.state.ETCToken.mint.getData(txProof.value, blockHash, 
+      data = ETCToken.mint.getData(txProof.value, blockHash, 
                                     txProof.path, txProof.parentNodes)
       var mintHash = await signing.mint(data)
-      this.updateTxStatus(id,"Tokens have been minted and will be credited after <a href='" + ROPSTEN_ETHERSCAN_LINK + mintHash + "' target='_blank'>this transaction</a> has been mined.")
+      this.updateTxStatus(id,"Tokens have been minted and will be credited after <a href='" + RINKEBY_ETHERSCAN_LINK + mintHash + "' target='_blank'>this transaction</a> has been mined.")
     } else {
-      console.log("Wrong destination network.")
+      this.updateTxStatus(id,"Wrong destination network.")
     }
   }
 
@@ -198,10 +195,10 @@ class LockTxStatus extends Component {
   
   dataHasRelayed(destChain, blockHash) {
     var data = this.state.relays[destChain].blocks.getData(blockHash);
-    var res = InfuraRopsten.eth.call({
+    var res = InfuraRinkeby.eth.call({
       data: data, 
       from: this.props.currAccount, 
-      to: PEACE_RELAY_ADDRESS_ROPSTEN
+      to: PEACE_RELAY_ADDRESS_RINKEBY
     });
     return (res > 0);
   }

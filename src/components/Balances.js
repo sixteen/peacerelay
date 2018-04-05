@@ -7,9 +7,9 @@ export default class Balances extends Component {
 		super(props);
 		this.state = {
 			kovanBalance: 0,
-			ropstenBalance: 0,
+			rinkebyBalance: 0,
 			kovanAddress: "",
-			ropstenAddress: ""
+			rinkebyAddress: ""
 		}
 		
 		this.queryBalance = this.queryBalance.bind(this);
@@ -34,10 +34,10 @@ export default class Balances extends Component {
 			this.setState({kovanBalance: InfuraKovan.fromWei(balanceResult, 'ether')});
 			*/
 		} else {
-			let balance = ETCToken.balanceOf(this.state.ropstenAddress)
+			let balance = ETCToken.balanceOf(this.state.rinkebyAddress)
 			balance = this.props.web3.fromWei(balance, 'ether').toNumber()
-			if (balance != this.state.ropstenBalance) {
-				this.setState({ropstenBalance: balance})
+			if (balance != this.state.rinkebyBalance) {
+				this.setState({rinkebyBalance: balance})
 			}
 		}
 	}
@@ -50,16 +50,17 @@ export default class Balances extends Component {
 		return (
 			<div className="tokenBalance">
 				<h4 className="tokenBalanceTitle">Locked ETH in Kovan</h4>
+				<h6>balanceOf() not implemented in ETCLocking yet</h6>
 				<hr className="divider"/>
 				<p>{this.state.kovanBalance} ETH</p>
 	            <Input type='text' name="kovanAddress" placeholder="Wallet Address" value={this.state.kovanAddress} onChange={this.handleChange}/>
 	          	<Button color="info" onClick={() => this.queryBalance('kovan')} block>Query</Button>
 				<br />
-				<h4 className="tokenBalanceTitle">ETC Tokens in Ropsten</h4>
+				<h4 className="tokenBalanceTitle">ETC Tokens in Rinkeby</h4>
 				<hr className="divider"/>
-				<p>{this.state.ropstenBalance} ETC</p>
-	            <Input type='text' name="ropstenAddress" placeholder="Wallet Address" value={this.state.ropstenAddress} onChange={this.handleChange}/>
-	          	<Button color="info" onClick={() => this.queryBalance('ropsten')} block>Query</Button>
+				<p>{this.state.rinkebyBalance} ETC</p>
+	            <Input type='text' name="rinkebyAddress" placeholder="Wallet Address" value={this.state.rinkebyAddress} onChange={this.handleChange}/>
+	          	<Button color="info" onClick={() => this.queryBalance('rinkeby')} block>Query</Button>
 			</div>
 		);
 	}

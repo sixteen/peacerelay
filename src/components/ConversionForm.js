@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { Jumbotron, Row, Col, Button, Form, FormGroup, Label, Input } from 'reactstrap'
-import { ROPSTEN_NETWORK_ID, KOVAN_NETWORK_ID } from './Constants';
+import { RINKEBY_NETWORK_ID, KOVAN_NETWORK_ID } from './Constants';
 import TxStatus from './TxStatus'
 import LockTxStatus from './LockTxStatus'
 import BurnTxStatus from './BurnTxStatus'
@@ -12,10 +12,10 @@ export default class ConversionForm extends Component {
 
   render() {
     const currNetwork = this.props.network;
-    if (currNetwork == ROPSTEN_NETWORK_ID) {
+    if (currNetwork == RINKEBY_NETWORK_ID) {
       return (
       <div>
-        <h1 className="conversionFormTitle">Ropsten to Kovan</h1>
+        <h1 className="conversionFormTitle">Rinkeby to Kovan</h1>
         <hr className="divider"/>
         <Row>
           <Col xs="3">
@@ -24,7 +24,7 @@ export default class ConversionForm extends Component {
 
           <Col xs="9">
             <TokenForm
-            srcChain='ropsten'
+            srcChain='rinkeby'
             destChain='kovan'
             submitButtonText='Convert Back To Kovan'
             isLock  = {false}
@@ -37,7 +37,7 @@ export default class ConversionForm extends Component {
     } else if (currNetwork == KOVAN_NETWORK_ID) {
       return (
       <div>
-        <h1 className="conversionFormTitle">Kovan to Ropsten</h1>
+        <h1 className="conversionFormTitle">Kovan to Rinkeby</h1>
         <hr className="divider"/>
         <Row>
           <Col xs="3">
@@ -47,8 +47,8 @@ export default class ConversionForm extends Component {
           <Col xs="9">
             <TokenForm 
             srcChain='kovan'
-            destChain='ropsten'
-            submitButtonText='Convert To Ropsten'
+            destChain='rinkeby'
+            submitButtonText='Convert To Rinkeby'
             isLock={true}
             />
           </Col>
@@ -134,13 +134,12 @@ function LockOrBurn(props) {
     return (
     <div>
     <BurnTxStatus
-    ref={instance => {props.parent.child = instance; }} 
     recipient = {props.recipient}
     ethAmt = {props.ethAmt}
     srcChain = {props.srcChain}
     destChain = {props.destChain}
+    submitButtonText = {props.submitButtonText}
     />
-    <Button color='danger' onClick={() => props.parent.child.submitBurnTx() }>{props.submitButtonText}</Button> 
     </div>
     )
   }

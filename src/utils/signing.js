@@ -6,27 +6,29 @@ const request = require("superagent");
 const settings = require("../../cli/settings.json");
 var BigNumber = require('bignumber.js');
 var EP = require('eth-proof');
-import { KOVAN_NETWORK_ID, ROPSTEN_NETWORK_ID } from '../components/Constants.js';
+import { KOVAN_NETWORK_ID, RINKEBY_NETWORK_ID, ROPSTEN_NETWORK_ID } from '../components/Constants.js';
 
 var chainUrlMapping = {
   'kovan': "https://kovan.infura.io",
-  'ropsten': "https://ropsten.infura.io"
+  'ropsten': "https://ropsten.infura.io",
+  'rinkeby': "https://rinkeby.infura.io"
 }
 
 var chainIdMapping = {
   'kovan': parseInt(KOVAN_NETWORK_ID),
-  'ropsten': parseInt(ROPSTEN_NETWORK_ID)
+  'ropsten':parseInt(ROPSTEN_NETWORK_ID),
+  'rinkeby': parseInt(RINKEBY_NETWORK_ID)
 }
 
 async function helper(data, chain, contractAddr, amount) {
   try {
-    const nonce = await getNonce(privateToAddress(settings[chain].privateKey), chainUrlMapping[chain]);
+    const nonce = await getNonce(privateToAddress(settings[chain].privateKey), settings[chain].url);
     const stx = signTransaction(
       {
         to: contractAddr,
         value: amount,
         data: data,
-        gasLimit: "0x493e0",
+        gasLimit: "0x7A120",
         gasPrice: "0x3B9ACA00",
         nonce: nonce,
         chainId: chainIdMapping[chain]
@@ -59,7 +61,7 @@ async function unlock(data) {
 
 async function burn(data, amount) {
   try {
-    var hash = await helper(data, 'ropsten', settings['ropsten'].etcTokenAddress, amount);
+    var hash = await helper(data, 'rinkeby', settings['rinkeby'].etcTokenAddress, amount);
     return hash;
   } catch(err) {
     throw err;
@@ -68,7 +70,7 @@ async function burn(data, amount) {
 
 async function mint(data) {
   try {
-    var hash = await helper(data, 'ropsten', settings['ropsten'].etcTokenAddress, 0);
+    var hash = await helper(data, 'rinkeby', settings['rinkeby'].etcTokenAddress, 0);
     return hash;
   } catch(err) {
     throw err;
@@ -157,4 +159,4 @@ async function getTransactionReceipt(txHash, chain) {
 
 // module.exports = {ethCall, getBlockInfo, getTransactionReceipt, lock, unlock, mint, burn, PeaceRelayKovan,
 //                   PeaceRelayRopsten, ETCToken, ETCLocking, EP};
-module.exports = {ethCall, mint};
+module.exports = {ethCall, mint, unlock};
