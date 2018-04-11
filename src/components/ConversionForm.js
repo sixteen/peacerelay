@@ -1,15 +1,11 @@
 import React, { Component } from 'react'
-import { Jumbotron, Row, Col, Button, Form, FormGroup, Label, Input } from 'reactstrap'
+import { Jumbotron, Row, Col, Form, FormGroup, Label, Input } from 'reactstrap'
 import { RINKEBY_NETWORK_ID, KOVAN_NETWORK_ID } from './Constants';
 import TxStatus from './TxStatus'
 import LockTxStatus from './LockTxStatus'
 import BurnTxStatus from './BurnTxStatus'
 
 export default class ConversionForm extends Component {
-  constructor(props) {
-    super(props)
-  }
-
   render() {
     const currNetwork = this.props.network;
     if (currNetwork == RINKEBY_NETWORK_ID) {
@@ -27,7 +23,7 @@ export default class ConversionForm extends Component {
             srcChain='rinkeby'
             destChain='kovan'
             submitButtonText='Convert Back To Kovan'
-            isLock  = {false}
+            isLock={false}
             />
           </Col>
         </Row>
@@ -122,11 +118,11 @@ function LockOrBurn(props) {
     return (
     <div>
     <LockTxStatus
-    recipient = {props.recipient}
-    ethAmt = {props.ethAmt}
-    srcChain = {props.srcChain}
-    destChain = {props.destChain}
-    submitButtonText = {props.submitButtonText}
+    recipient={props.recipient}
+    ethAmt={props.ethAmt}
+    srcChain={props.srcChain}
+    destChain={props.destChain}
+    submitButtonText={props.submitButtonText}
     />
     </div>
     )
@@ -134,11 +130,11 @@ function LockOrBurn(props) {
     return (
     <div>
     <BurnTxStatus
-    recipient = {props.recipient}
-    ethAmt = {props.ethAmt}
-    srcChain = {props.srcChain}
-    destChain = {props.destChain}
-    submitButtonText = {props.submitButtonText}
+    recipient={props.recipient}
+    ethAmt={props.ethAmt}
+    srcChain={props.srcChain}
+    destChain={props.destChain}
+    submitButtonText={props.submitButtonText}
     />
     </div>
     )

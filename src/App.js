@@ -23,7 +23,7 @@ class App extends Component {
   
   componentDidMount() {
     setInterval(
-      () => this.fetchWeb3(), 3000
+      () => this.fetchWeb3(), 2000
     )
   }
 

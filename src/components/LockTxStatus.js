@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 import { Button } from 'reactstrap'
 import { newTxStatus, updateTxStatus, removeTxStatus } from '../actions/txStatusActions'
 import { MAX_ATTEMPTS, RINKEBY_ETHERSCAN_LINK, InfuraRinkeby, InfuraKovan, ETCToken,
-  EpRinkeby, EPs, PeaceRelayRinkeby, ETC_LOCKING_ADDRESS, PEACE_RELAY_ADDRESS_RINKEBY } from './Constants.js'
+  EPs, PeaceRelayRinkeby, ETC_LOCKING_ADDRESS, PEACE_RELAY_ADDRESS_RINKEBY } from './Constants.js'
 
 var helper  = require('../../utils/helpers.js');
 var BN = require('bn.js');
@@ -99,7 +99,7 @@ class LockTxStatus extends Component {
   }
 
   async lock(id, callback) {
-    var txHash, data;
+    var data;
     let chain = this.props.srcChain,
     recipient = this.props.recipient,
     amount = this.props.ethAmt,

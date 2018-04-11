@@ -8,10 +8,6 @@ const mapStateToProps = (state) => ({
 	})
 
 class TxStatus extends Component {
-	constructor(props) {
-		super(props);
-	}
-
 	renderChildren(txs) {
 		if (!txs) {
 			return
