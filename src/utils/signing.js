@@ -1,11 +1,9 @@
-const buffer = require("buffer");
+const Buffer = require("buffer");
 const EthereumTx = require("ethereumjs-tx");
 const secp256k1 = require("secp256k1/elliptic");
 const keccak256 = require("js-sha3").keccak256;
 const request = require("superagent");
 const settings = require("../../cli/settings.json");
-var BigNumber = require('bignumber.js');
-var EP = require('eth-proof');
 import { KOVAN_NETWORK_ID, RINKEBY_NETWORK_ID, ROPSTEN_NETWORK_ID } from '../components/Constants.js';
 
 var chainUrlMapping = {

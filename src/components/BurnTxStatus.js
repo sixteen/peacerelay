@@ -94,7 +94,7 @@ class BurnTxStatus extends Component {
   }
 
   async burn(id,callback) {
-    var txHash, data;
+    var data;
     let chain = this.props.srcChain,
     recipient = this.props.recipient,
     amount = this.props.ethAmt,
