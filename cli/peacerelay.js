@@ -59,7 +59,7 @@ async function postFrom() {
  * @returns  
  */
 async function catchUp(highestBlockNumber) {
-  if (currentBlockNumber < highestBlockNumber - 3) {
+  if (currentBlockNumber < highestBlockNumber - 1) {
     const result = await relay(currentBlockNumber);
     if (result && result.body && result.body.error) {
       return await catchUp(highestBlockNumber)
@@ -67,7 +67,7 @@ async function catchUp(highestBlockNumber) {
     currentBlockNumber += 1;
     await catchUp(highestBlockNumber)
   } else {
-    console.log('Caught up to 3rd most current block!');
+    console.log('Caught up to 2nd most current block!');
     setTimeout(async function() { await postFrom() }, (10000));
   }
 }
@@ -80,7 +80,8 @@ async function relay(num) {
     if (block === null) {
       return await relay(num);
     }
-    data = await PeaceRelayTo.methods.submitBlock(block.hash, '0x' + rlp.encode(getRawHeader(block)).toString('hex')).encodeABI();
+    var BN = From.utils.BN;
+    data = await PeaceRelayTo.methods.submitBlock(new BN(block.hash).toString(), '0x' + rlp.encode(getRawHeader(block)).toString('hex')).encodeABI();
     hash = await submitBlock(data, to);
     return hash;
   } catch (e) {
