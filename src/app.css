@@ -35,6 +35,14 @@ body {
   background-color: #ffdd57
 }
 
+.txStatus {
+  padding-top: 2%;
+}
+
+.txStatusTitle {
+  color: orange;
+}
+
 /* TOKEN FORM */
 .tokenForm {
   color: white;

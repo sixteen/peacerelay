@@ -11,7 +11,14 @@ export default class ConversionForm extends Component {
     if (currNetwork == RINKEBY_NETWORK_ID) {
       return (
       <div>
-        <h1 className="conversionFormTitle">Rinkeby to Kovan</h1>
+        <Row>
+          <Col xs="3" className="txStatus">
+          <h4 className="txStatusTitle">Transaction Status</h4>
+          </Col>
+          <Col xs="9">
+          <h1 className="conversionFormTitle">Rinkeby to Kovan</h1>
+          </Col>
+        </Row>
         <hr className="divider"/>
         <Row>
           <Col xs="3">
@@ -33,7 +40,14 @@ export default class ConversionForm extends Component {
     } else if (currNetwork == KOVAN_NETWORK_ID) {
       return (
       <div>
-        <h1 className="conversionFormTitle">Kovan to Rinkeby</h1>
+        <Row>
+          <Col xs="3" className="txStatus">
+          <h4 className="txStatusTitle">Transaction Status</h4>
+          </Col>
+          <Col xs="9">
+          <h1 className="conversionFormTitle">Kovan to Rinkeby</h1>
+          </Col>
+        </Row>
         <hr className="divider"/>
         <Row>
           <Col xs="3">
@@ -88,7 +102,7 @@ class TokenForm extends Component {
         <Form onSubmit={this.handleSubmit}>
         
           <FormGroup>
-            <label>ETH Amount</label>
+            <label>Amount</label>
             <Input type="number" name="ethAmt" value={this.state.ethAmt} onChange={this.handleChange} />
           </FormGroup>
   

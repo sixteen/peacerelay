@@ -173,7 +173,7 @@ class LockTxStatus extends Component {
       data = ETCToken.mint.getData(txProof.value, blockHash, 
                                     txProof.path, txProof.parentNodes)
       var mintHash = await signing.mint(data)
-      this.updateTxStatus(id,"Tokens have been minted and will be credited after <a href='" + RINKEBY_ETHERSCAN_LINK + mintHash + "' target='_blank'>this transaction</a> has been mined.")
+      this.updateTxStatus(id,"ETC Tokens will be credited after <a href='" + RINKEBY_ETHERSCAN_LINK + mintHash + "' target='_blank'>this transaction</a> has been mined")
     } else {
       this.updateTxStatus(id,"Wrong destination network.")
     }

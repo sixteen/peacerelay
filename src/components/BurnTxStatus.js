@@ -59,13 +59,6 @@ class BurnTxStatus extends Component {
       self.updateTxStatus(id,"Checking vaildity of transaction...")
       if(self.isValidReceipt(receipt.status)) {
         let [txProof,receiptProof] = await self.getProofsFromTxHash(burnTxHash,self.props.srcChain);
-        console.log('TxValue:' + txProof.value)
-        console.log('Blockhash:' + txProof.blockHash)
-        console.log('TxPath:' + txProof.path)
-        console.log('TxNodes:' + txProof.parentNodes)
-        console.log('RecValue:' + receiptProof.value)
-        console.log('RecPath:' + receiptProof.path)
-        console.log('RecNodes:' + receiptProof.parentNodes)
         let blockHash = txProof.blockHash;
         blockHash = self.convertBlockHashToBigNumFormat(blockHash);
         
@@ -111,9 +104,7 @@ class BurnTxStatus extends Component {
         async function(err, res) {
           if(!err) {
             self.updateTxStatus(id,"Waiting for transaction to be mined....")
-            //Need to add delay, otherwise status won't be updated
-            await delay(100);
-            callback(self,res,id);
+            callback(self,res,id)
           } else {
             self.removeTxStatus(id)
           }
@@ -164,7 +155,7 @@ class BurnTxStatus extends Component {
       data = ETCLocking.unlock.getData(txProof.value, blockHash, txProof.path, txProof.parentNodes,
       receiptProof.value, receiptProof.path, receiptProof.parentNodes)
       var unlockHash = await signing.unlock(data)
-      this.updateTxStatus(id,"Waiting for <a href='" + KOVAN_ETHERSCAN_LINK + unlockHash + "' target='_blank'>this transaction</a> to be mined."); 
+      this.updateTxStatus(id,"Waiting for <a href='" + KOVAN_ETHERSCAN_LINK + unlockHash + "' target='_blank'>transaction</a> to be mined."); 
       
     } else {
         this.updateTxStatus(id,"Wrong destination network.")
@@ -198,7 +189,7 @@ class BurnTxStatus extends Component {
 
   render() {
     return (
-    <Button color="success" onClick={this.submitBurnTx}>{this.props.submitButtonText}</Button>
+    <Button color="danger" onClick={this.submitBurnTx}>{this.props.submitButtonText}</Button>
     )
   }
 }
