@@ -58,7 +58,7 @@ We use AWS to do the relaying of block headers. All necessary files can be found
   
 ## Setting up the website
 0. It is assumed that the contracts have been deployed and relayers have been set up.
-1. Run `truffle deploy` to compile contracts. You should now have a `build` folder. The json files will be needed for the front-end website. To be specific, only the ABI of the contracts is needed, so an alternative is to copy the contract codes to [remix](http://remix.ethereum.org) to obtain the ABI.
+1. Run `truffle deploy` to compile contracts. You should now have a `build` folder. The json files will be needed for the front-end website. To be specific, only the ABI of the contracts is needed, so an alternative is to copy the contract codes to [Remix](http://remix.ethereum.org) to obtain the ABI.
 2. Ensure that the `settings.json` file has the correct information as mentioned in step 2 of the 'setting up the relayers' section.
 3. Run `npm install` to install dependencies.
 4. Run `npm run dev` or `yarn && yarn start`.
