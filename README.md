@@ -46,7 +46,7 @@ The contracts' codes can be found in the ./contracts folder.
 3. Deploy another `PeaceRelay` contract on Kovan. This contract relays block headers from Rinkeby. The constructor argument is the desired **Rinkeby** block number to start relaying from.
 4. Deploy a `ETHLocking` contract on Kovan, which has the Rinkeby `ETHToken` (Step 2) and Kovan `PeaceRelay` (Step 3) contract addresses  as its constructor arguments. Eg. `"0xd8f16118cd79042491cde899d4963aae7d35fb7b","0xa469a40f1bfa089761b226c084c6eaec6a19bc4f"`
 5. Go back to the deployed `ETHToken` contract on Rinkeby and call the `changeETHLockingAddr()` function using the `ETHLocking` contract address (Step 4) as the input argument.
-6. **IMPORTANT:** The relayers' addresses must be authorised in the `PeaceRelay` contracts by calling the `authorise()` function. This need not be done if the creators of the `PeaceRelay` contracts are the relayers.
+6. **IMPORTANT:** The relayers' addresses must be authorised in the `PeaceRelay` contracts by calling the `authorise()` function. This need not be done if the creators of the `PeaceRelay` contracts are the relayers themselves.
 
 ## Setting up the relayers
 We use AWS to do the relaying of block headers. All necessary files can be found in the ./cli folder. Create a linux server (you may run locally as well) and upload those files onto the server.
